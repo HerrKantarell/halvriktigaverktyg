@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HK / Tools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #fafaf8;
+      --surface: #f4f4f2;
+      --border: #e4e4e0;
+      --text: #1a1916;
+      --muted: #a0a09a;
+      --ink-light: #6b6b65;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'EB Garamond', Georgia, serif;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* ─── Header ─── */
+    header {
+      padding: 72px 0 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 10px;
+    }
+
+    .logotype {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+
+    .logotype span {
+      color: var(--muted);
+    }
+
+    .header-right {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-align: right;
+      letter-spacing: 0.04em;
+      line-height: 1.9;
+    }
+
+    .header-sub {
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    /* ─── Meta bar ─── */
+    .meta {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.63rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Section label ─── */
+    .section-label {
+      padding: 44px 0 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── Grid ─── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--bg);
+      padding: 28px 26px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.18s ease;
+      min-height: 160px;
+    }
+
+    .card:hover {
+      background: var(--surface);
+    }
+
+    .card:hover .card-arrow {
+      transform: translate(2px, -2px);
+    }
+
+    .card.wip { cursor: default; }
+
+    .card.wip .card-name,
+    .card.wip .card-desc {
+      opacity: 0.3;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .card-arrow {
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: transform 0.18s ease;
+      line-height: 1;
+    }
+
+    .card.wip .card-arrow { opacity: 0.2; }
+
+    .card-name {
+      font-size: 1.25rem;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin-top: auto;
+    }
+
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--ink-light);
+      line-height: 1.55;
+    }
+
+    .card-status {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .card-status.live { color: #5a7a4a; }
+
+    /* ─── Footer ─── */
+    footer {
+      padding: 36px 0 52px;
+      border-top: 1px solid var(--border);
+      margin-top: 1px;
+      display: flex;
+      justify-content: space-between;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Animations ─── */
+    header, .meta {
+      opacity: 0;
+      animation: up 0.5s ease forwards;
+    }
+
+    .card {
+      opacity: 0;
+      animation: up 0.45s ease forwards;
+    }
+
+    @keyframes up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.15s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+    .card:nth-child(4) { animation-delay: 0.25s; }
+    .card:nth-child(5) { animation-delay: 0.3s; }
+    .card:nth-child(6) { animation-delay: 0.35s; }
+
+    @media (max-width: 600px) {
+      .wrap { padding: 0 24px; }
+      header { padding: 48px 0 32px; }
+      .header-top { flex-direction: column; gap: 12px; }
+      .header-right { text-align: left; }
+      .grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <div class="header-top">
+        <div class="logotype">HK <span>/ tools</span></div>
+        <div class="header-right">
+          Copenhagen, DK<br>
+          github.com/HerrKantarell
+        </div>
+      </div>
+      <div class="header-sub">A small collection of personal utilities.</div>
+    </header>
+
+    <div class="meta">
+      <span>6 tools · 1 live</span>
+      <span id="date"></span>
+    </div>
+
+    <div class="section-label">Tools</div>
+
+    <div class="grid">
+
+      <a class="card" href="https://athlete-intelligence.streamlit.app" target="_blank">
+        <div class="card-top">
+          <span class="card-tag">Python · Streamlit</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">Athlete Intelligence</div>
+        <div class="card-desc">Training dashboard med AI-coach, fitness graph och Intervals.icu-integration.</div>
+        <div class="card-status live">Live</div>
+      </a>
+
+      <a class="card wip" href="#">
+        <div class="card-top">
+          <span class="card-tag">JS · Leaflet</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">Sherlock Map</div>
+        <div class="card-desc">Viktorianskt London kartlagt efter Holmes-universumet.</div>
+        <div class="card-status">Planned</div>
+      </a>
+
+      <a class="card wip" href="#">
+        <div class="card-top">
+          <span class="card-tag">React · Claude API</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">Drawing Generator</div>
+        <div class="card-desc">Slumpar motiv, stil och begränsningar for teckningsprojekt.</div>
+        <div class="card-status">Planned</div>
+      </a>
+
+      <a class="card wip" href="#">
+        <div class="card-top">
+          <span class="card-tag">Python · Claude API</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">Asset Intelligence</div>
+        <div class="card-desc">Sökbart index over jobbarkiv, klassificerat per modell och marknad.</div>
+        <div class="card-status">Planned</div>
+      </a>
+
+      <a class="card wip" href="#">
+        <div class="card-top">
+          <span class="card-tag">—</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">—</div>
+        <div class="card-desc">Nästa grej.</div>
+        <div class="card-status">Empty</div>
+      </a>
+
+      <a class="card wip" href="#">
+        <div class="card-top">
+          <span class="card-tag">—</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div class="card-name">—</div>
+        <div class="card-desc">Nästa grej.</div>
+        <div class="card-status">Empty</div>
+      </a>
+
+    </div>
+
+    <footer>
+      <span>HerrKantarell</span>
+      <span id="year"></span>
+    </footer>
+
+  </div>
+
+  <script>
+    const now = new Date();
+    document.getElementById('year').textContent = now.getFullYear();
+    document.getElementById('date').textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  </script>
+</body>
+</html>
