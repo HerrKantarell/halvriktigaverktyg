@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Holmes Chronicles — A Cartography of Mysteries</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0804;--sb:#110d08;--card:#1a1208;--text:#c8aa86;--dim:#7a6245;
+  --bright:#ede0c4;--acc:#c4830a;--acc2:#6b4505;--brd:#2a1e0f;--brdl:#3d2c16;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif}
+#app{display:flex;height:100vh}
+#sidebar{width:310px;min-width:310px;height:100%;background:var(--sb);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden}
+#hdr{padding:18px 18px 14px;border-bottom:1px solid var(--brd);flex-shrink:0}
+.eyebrow{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--acc);margin-bottom:5px}
+.apptitle{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:var(--bright);line-height:1.15;margin-bottom:3px}
+.appsub{font-size:12px;color:var(--dim);letter-spacing:.04em;margin-bottom:10px}
+.orn{display:flex;align-items:center;gap:7px;color:var(--acc2);font-size:9px}
+.orn::before,.orn::after{content:'';flex:1;height:1px;background:var(--brdl)}
+#ctls{padding:7px 14px;display:flex;gap:8px;border-bottom:1px solid var(--brd);flex-shrink:0}
+.sbtn{font-size:11px;color:var(--dim);background:none;border:1px solid var(--brdl);border-radius:4px;padding:3px 10px;cursor:pointer;font-family:'EB Garamond',serif;transition:color .15s,border-color .15s}
+.sbtn:hover{color:var(--text);border-color:var(--acc2)}
+#filters{flex:1;overflow-y:auto;padding:8px 12px 10px;scrollbar-width:thin;scrollbar-color:var(--brdl) transparent}
+.col-hdr{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc2);padding:9px 8px 3px;border-top:1px solid var(--brd);margin-top:5px}
+.col-hdr:first-child{border-top:none;margin-top:0}
+.srow{display:flex;align-items:flex-start;gap:9px;padding:6px 8px;border-radius:5px;cursor:pointer;transition:background .15s;user-select:none}
+.srow:hover{background:rgba(196,131,10,.07)}
+.srow.on{background:rgba(196,131,10,.11)}
+.chk{width:13px;height:13px;border:1px solid var(--acc2);border-radius:3px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.srow.on .chk{background:var(--acc);border-color:var(--acc)}
+.chk::after{content:'';display:block;width:7px;height:4px;border-left:1.5px solid #000;border-bottom:1.5px solid #000;transform:rotate(-45deg) translateY(-1px);opacity:0;transition:opacity .1s}
+.srow.on .chk::after{opacity:1}
+.sinfo{flex:1;min-width:0}
+.stitle{font-size:13px;color:var(--text);line-height:1.3}
+.smeta{font-size:11px;color:var(--dim);margin-top:1px}
+#locpanel{border-top:1px solid var(--brd);padding:14px 16px;flex-shrink:0;max-height:230px;overflow-y:auto;background:var(--card);display:none;scrollbar-width:thin;scrollbar-color:var(--brdl) transparent}
+#locpanel.vis{display:block}
+.locname{font-family:'Playfair Display',serif;font-size:15px;color:var(--bright);font-weight:700;margin-bottom:5px}
+.locdesc{font-size:13px;line-height:1.6;color:var(--text);margin-bottom:7px}
+.fact-badge{display:inline-block;font-size:10px;letter-spacing:.08em;color:var(--acc);background:rgba(196,131,10,.1);border:1px solid rgba(196,131,10,.22);border-radius:4px;padding:2px 7px;margin-bottom:6px}
+.locfact{font-size:12px;font-style:italic;color:var(--dim);line-height:1.55;margin-bottom:9px;border-left:2px solid var(--brdl);padding-left:9px}
+.loc-sl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(196,131,10,.12);color:var(--acc);border:1px solid rgba(196,131,10,.22);cursor:pointer;transition:background .15s}
+.tag:hover{background:rgba(196,131,10,.22)}
+.tag.off{opacity:.45}
+#mapc{flex:1;height:100%;position:relative}
+#map{height:100%;width:100%;background:#0f0c09}
+.dark-tiles{filter:invert(1) hue-rotate(180deg) brightness(.65) saturate(.4) contrast(1.1)}
+.leaflet-popup-content-wrapper{background:var(--sb)!important;border:1px solid var(--brdl)!important;border-radius:8px!important;box-shadow:0 8px 32px rgba(0,0,0,.65)!important;padding:0!important}
+.leaflet-popup-content{margin:0!important;width:275px!important}
+.leaflet-popup-tip{background:var(--sb)!important}
+.leaflet-popup-close-button{color:var(--dim)!important;font-size:16px!important;right:10px!important;top:8px!important}
+.leaflet-popup-close-button:hover{color:var(--text)!important}
+.pbody{padding:13px 16px}
+.pname{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--bright);margin-bottom:4px;padding-right:16px}
+.pdesc{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:5px}
+.pfact{font-size:11px;font-style:italic;color:var(--dim);line-height:1.5;border-left:2px solid var(--brdl);padding-left:8px;margin-bottom:8px}
+.ptags{display:flex;flex-wrap:wrap;gap:3px;padding-top:7px;border-top:1px solid var(--brd)}
+.ptag{font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(196,131,10,.14);color:var(--acc)}
+#stats{position:absolute;top:14px;right:14px;background:rgba(17,13,8,.9);border:1px solid var(--brdl);border-radius:6px;padding:7px 13px;z-index:1000;font-size:12px;color:var(--dim);backdrop-filter:blur(4px)}
+#stats b{color:var(--acc);font-family:'Playfair Display',serif;font-size:15px;font-weight:700;font-style:normal}
+#legend{position:absolute;bottom:22px;right:14px;background:rgba(17,13,8,.9);border:1px solid var(--brdl);border-radius:7px;padding:11px 13px;z-index:1000;pointer-events:none;backdrop-filter:blur(4px)}
+.ltitle{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+.li{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:var(--text)}
+.li:last-child{margin-bottom:0}
+.ld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ld.L{background:rgba(196,131,10,.35);border:1.5px solid #c4830a}
+.ld.C{background:rgba(106,158,74,.35);border:1.5px solid #6a9e4a}
+.ld.A{background:rgba(74,143,193,.35);border:1.5px solid #4a8fc1}
+.leaflet-control-zoom{border:1px solid var(--brdl)!important;border-radius:6px!important;overflow:hidden}
+.leaflet-control-zoom-in,.leaflet-control-zoom-out{background:var(--sb)!important;color:var(--text)!important;border-color:var(--brdl)!important}
+.leaflet-control-zoom-in:hover,.leaflet-control-zoom-out:hover{background:var(--card)!important;color:var(--bright)!important}
+.leaflet-control-attribution{background:rgba(8,5,2,.75)!important;color:var(--dim)!important;font-size:10px!important}
+.leaflet-control-attribution a{color:var(--dim)!important}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brdl);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="hdr">
+      <div class="eyebrow">Arthur Conan Doyle · 1887–1927</div>
+      <div class="apptitle">The Holmes Chronicles</div>
+      <div class="appsub">A cartography of mysteries</div>
+      <div class="orn">◆</div>
+    </div>
+    <div id="ctls">
+      <button class="sbtn" onclick="selectAll()">Select all</button>
+      <button class="sbtn" onclick="selectNone()">Clear all</button>
+    </div>
+    <div id="filters"></div>
+    <div id="locpanel"></div>
+  </div>
+  <div id="mapc">
+    <div id="map"></div>
+    <div id="stats"><b id="vcnt">55</b> locations visible</div>
+    <div id="legend">
+      <div class="ltitle">Location type</div>
+      <div class="li"><div class="ld L"></div>London</div>
+      <div class="li"><div class="ld C"></div>Countryside</div>
+      <div class="li"><div class="ld A"></div>Abroad</div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const COLS=[
+  {id:"novels",label:"The Four Novels"},
+  {id:"adv",   label:"The Adventures of Sherlock Holmes"},
+  {id:"mem",   label:"The Memoirs of Sherlock Holmes"},
+  {id:"ret",   label:"The Return of Sherlock Holmes"},
+  {id:"bow",   label:"His Last Bow"},
+  {id:"case",  label:"The Case-Book of Sherlock Holmes"},
+];
+const STORIES=[
+  {id:"ASIS",  title:"A Study in Scarlet",            year:1887,col:"novels"},
+  {id:"TSOF",  title:"The Sign of the Four",          year:1890,col:"novels"},
+  {id:"HOUND", title:"The Hound of the Baskervilles", year:1902,col:"novels"},
+  {id:"TVOF",  title:"The Valley of Fear",            year:1915,col:"novels"},
+  {id:"ASIB",  title:"A Scandal in Bohemia",          year:1891,col:"adv"},
+  {id:"TRHL",  title:"The Red-Headed League",         year:1891,col:"adv"},
+  {id:"ACOI",  title:"A Case of Identity",            year:1891,col:"adv"},
+  {id:"TBVM",  title:"The Boscombe Valley Mystery",   year:1891,col:"adv"},
+  {id:"TFOP",  title:"The Five Orange Pips",          year:1891,col:"adv"},
+  {id:"TMWTL", title:"The Man with the Twisted Lip",  year:1891,col:"adv"},
+  {id:"TATBC", title:"The Blue Carbuncle",            year:1892,col:"adv"},
+  {id:"TATSB", title:"The Speckled Band",             year:1892,col:"adv"},
+  {id:"TATNB", title:"The Noble Bachelor",            year:1892,col:"adv"},
+  {id:"TATBE", title:"The Beryl Coronet",             year:1892,col:"adv"},
+  {id:"TATCC", title:"The Copper Beeches",            year:1892,col:"adv"},
+  {id:"SILV",  title:"Silver Blaze",                  year:1892,col:"mem"},
+  {id:"GLOR",  title:"The 'Gloria Scott'",            year:1893,col:"mem"},
+  {id:"MUSG",  title:"The Musgrave Ritual",           year:1893,col:"mem"},
+  {id:"CROO",  title:"The Crooked Man",               year:1893,col:"mem"},
+  {id:"NAVA",  title:"The Naval Treaty",              year:1893,col:"mem"},
+  {id:"TFP",   title:"The Final Problem",             year:1893,col:"mem"},
+  {id:"TATEH", title:"The Empty House",               year:1903,col:"ret"},
+  {id:"TATNW", title:"The Norwood Builder",           year:1903,col:"ret"},
+  {id:"TATDM", title:"The Dancing Men",               year:1903,col:"ret"},
+  {id:"TATPS", title:"The Priory School",             year:1904,col:"ret"},
+  {id:"TATBP", title:"The Adventure of Black Peter",  year:1904,col:"ret"},
+  {id:"TATAG", title:"The Abbey Grange",              year:1904,col:"ret"},
+  {id:"TATSC", title:"The Second Stain",              year:1904,col:"ret"},
+  {id:"TATDF", title:"The Devil's Foot",              year:1910,col:"bow"},
+  {id:"TATBP2",title:"The Bruce-Partington Plans",    year:1908,col:"bow"},
+  {id:"HLB",   title:"His Last Bow",                  year:1917,col:"bow"},
+  {id:"TATIL", title:"The Illustrious Client",        year:1924,col:"case"},
+  {id:"TATSH", title:"Shoscombe Old Place",           year:1927,col:"case"},
+  {id:"TATLM", title:"The Lion's Mane",               year:1926,col:"case"},
+  {id:"TATVE", title:"The Veiled Lodger",             year:1927,col:"case"},
+];
+const LOCS=[
+  {id:1,name:"221B Baker Street",lat:51.5237,lng:-0.1585,type:"L",
+   stories:["ASIS","TSOF","ASIB","TRHL","ACOI","TBVM","TFOP","TMWTL","TATBC","TATSB","TATNB","TATBE","TATCC","SILV","MUSG","NAVA","TFP","TATEH","TATNW","TATDM","TATPS","TATAG","TATSC","HLB","HOUND","TVOF","TATIL","TATBP2"],
+   desc:"The legendary lodgings where Holmes keeps his chemical apparatus, tobacco in a Persian slipper, and correspondence pinned to the mantelpiece with a jack-knife.",
+   fact:"The real Baker Street had no 221B — the numbers only reached 85 in Doyle's day. The address became official when the street was extended in the 1930s, and a bank occupying the building still receives thousands of letters addressed to Holmes every year."},
+  {id:2,name:"New Scotland Yard",lat:51.5013,lng:-0.1241,type:"L",
+   stories:["ASIS","TSOF","TRHL","TFOP","TATEH","HOUND","TATSC"],
+   desc:"Headquarters of the Metropolitan Police, where Inspector Lestrade wages his perpetual war of dignity against Holmes's superior methods.",
+   fact:"The name 'Scotland Yard' comes from the medieval palace where Scottish kings stayed when visiting London — entirely unrelated to policing. Doyle modelled Lestrade partly on real-life inspectors of the 1880s."},
+  {id:3,name:"Briony Lodge, St John's Wood",lat:51.5342,lng:-0.1725,type:"L",
+   stories:["ASIB"],
+   desc:"Irene Adler's villa, where Holmes disguises himself as a groom and then a clergyman to locate a hidden photograph — only to find she has already planned her escape.",
+   fact:"Irene Adler appears in only one story yet is the most famous woman in all of Holmes. Holmes refers to her ever after simply as 'the Woman' — the only person who ever truly outwitted him."},
+  {id:4,name:"St Monica's Church, Edgware Road",lat:51.5218,lng:-0.1683,type:"L",
+   stories:["ASIB"],
+   desc:"Where Irene Adler marries Godfrey Norton in extraordinary haste — and Holmes is compelled, against every intention, to act as a witness at the ceremony.",
+   fact:"Holmes witnesses the wedding in disguise and later admits it was 'one of the strangest situations in which I have found myself.' He had come to steal the photograph, not attend a wedding."},
+  {id:5,name:"Coburg Square, City of London",lat:51.5162,lng:-0.0937,type:"L",
+   stories:["TRHL"],
+   desc:"Site of Jabez Wilson's pawnshop above which the Red-Headed League operated — an elaborate ruse to clear the premises while a tunnel was dug to the bank vault below.",
+   fact:"Doyle based the tunnel plot on a real 1882 robbery at the Antwerp Bank, where thieves dug through from an adjacent shop. The Red-Headed League is often cited as one of the finest plot constructions in all of detective fiction."},
+  {id:6,name:"Upper Swandam Lane, Opium Den",lat:51.5066,lng:-0.0891,type:"L",
+   stories:["TMWTL"],
+   desc:"A riverside opium den in the East End concealing a respectable man's secret — he dresses as a beggar to supplement a comfortable income, hiding it from his wife.",
+   fact:"Opium dens in Victorian London were vastly exaggerated by the press. Most were modest lodging houses catering to Chinese sailors. Holmes himself was not unfamiliar with chemical indulgences — Watson frequently frets about his cocaine habit."},
+  {id:7,name:"Northumberland Hotel, Strand",lat:51.5083,lng:-0.1224,type:"L",
+   stories:["HOUND"],
+   desc:"Sir Henry Baskerville's London hotel, where his boots begin to vanish. Stapleton is already trailing him through the city streets before the Dartmoor journey begins.",
+   fact:"The stolen boot — first one, then a different one — is how Holmes deduces that Stapleton needs Sir Henry's fresh scent for the hound. The detail of the wrong boot being stolen first is one of Doyle's most elegant clues."},
+  {id:8,name:"Lauriston Gardens, Brixton",lat:51.461,lng:-0.1131,type:"L",
+   stories:["ASIS"],
+   desc:"An empty house in Brixton where Enoch Drebber is found dead — face frozen in terror, the word RACHE scratched in blood on the wall. Holmes's first crime scene with Watson.",
+   fact:"This is the very first deduction Holmes performs for Watson — identifying tan lines from Afghanistan, a military bearing, and a recent wound. Watson thinks he is a fraud. It is the beginning of the greatest friendship in detective fiction."},
+  {id:9,name:"Pondicherry Lodge, Upper Norwood",lat:51.4209,lng:-0.0774,type:"L",
+   stories:["TSOF"],
+   desc:"The mansion of Bartholomew Sholto, reached via rope ladder and trapdoor, where the Agra Treasure is discovered and a murder is committed by a poisoned thorn from a blow-pipe.",
+   fact:"The Agra Treasure — rubies, emeralds, sapphires — is described in loving detail but never actually valued. Doyle's description of Tonga, the Andaman Islander villain, reflects the ugly racial assumptions of his era and is today the most troubling element of the story."},
+  {id:10,name:"Lyceum Theatre, Strand",lat:51.5117,lng:-0.1204,type:"L",
+   stories:["TSOF"],
+   desc:"Where Watson and Miss Morstan step into a waiting carriage for a blindfolded journey across London — the opening of the adventure that changes Watson's life.",
+   fact:"The Lyceum was managed by Henry Irving, the greatest actor of the Victorian age. Its use as a meeting point lends the story instant glamour. Watson falls in love with Miss Morstan during this adventure and proposes at the end."},
+  {id:11,name:"Park Lane (Adair Murder)",lat:51.5065,lng:-0.1532,type:"L",
+   stories:["TATEH"],
+   desc:"Ronald Adair's locked room, where he was shot with a revolver at a distance impossible for an ordinary marksman — the opening puzzle of Holmes's return from the dead.",
+   fact:"Colonel Moran used an air-gun made by a blind German mechanic — a silent murder weapon. Holmes had been watching Moran for years while faking his own death, building a case that required the perfect moment to close the trap."},
+  {id:12,name:"Camden House, Baker Street",lat:51.5241,lng:-0.1591,type:"L",
+   stories:["TATEH"],
+   desc:"The empty house opposite 221B, where Holmes springs the trap on Moran — who fires at a wax bust of Holmes, cleverly rotated by Mrs Hudson every fifteen minutes.",
+   fact:"Holmes was 'dead' for three years (1891–1894) — the Great Hiatus. Doyle had killed him off after tiring of the stories. Reader outrage was so enormous — some wore black armbands — that he was eventually forced to bring Holmes back."},
+  {id:13,name:"Lower Norwood (Norwood Builder)",lat:51.4217,lng:-0.1053,type:"L",
+   stories:["TATNW"],
+   desc:"Jonas Oldacre's villa, where the builder fakes his own murder to frame a solicitor's clerk — until Holmes exposes the living man hidden behind fresh plaster.",
+   fact:"Holmes smokes a pipe contemplatively for an entire hour before announcing he has solved the case. When Watson asks how, Holmes replies that the clue had been under his nose from the start. This became one of Doyle's most imitated narrative devices."},
+  {id:14,name:"Foreign Office, Whitehall",lat:51.5025,lng:-0.1297,type:"L",
+   stories:["NAVA","TATSC","TATBP2"],
+   desc:"The nerve centre of British diplomacy. A lost naval treaty, a stolen letter that could trigger a European war, and vanished submarine plans all draw Holmes to these corridors.",
+   fact:"Holmes's brother Mycroft is vaguely described as sometimes 'being' the British government — a deliberately opaque description suggesting a role above the Foreign Office itself. Mycroft appears in only four stories, yet looms large in every international case."},
+  {id:15,name:"Victoria Station",lat:51.4952,lng:-0.1441,type:"L",
+   stories:["HOUND","TFP","TATSB","TATCC","TATPS"],
+   desc:"The great departure point for expeditions south and west — to Devon, Hampshire, Kent, and the depths of rural England.",
+   fact:"Doyle used actual Victorian railway timetables to ensure his journey times were accurate. Many Holmes stories follow the same geography: client at Baker Street, deduction in the sitting room, train from Victoria, case solved in the countryside."},
+  {id:16,name:"Diogenes Club, Pall Mall",lat:51.5056,lng:-0.1367,type:"L",
+   stories:["TATBP2","HOUND"],
+   desc:"The club for the unsociable — no member may take the slightest notice of another, and conversation is strictly forbidden in all rooms except the Strangers' Room. Mycroft's domain.",
+   fact:"Mycroft Holmes is described as having all of Sherlock's faculties in even greater degree — but possessing the energy of a barnacle. He is so averse to any deviation from his routine that he has almost no need of the world outside his club and his office."},
+  {id:17,name:"Woolwich Arsenal",lat:51.4892,lng:0.0709,type:"L",
+   stories:["TATBP2"],
+   desc:"Where the Bruce-Partington submarine plans were developed — and from where a clerk was persuaded to steal seven of the ten most sensitive pages.",
+   fact:"Admiral Wilson famously called submarines 'underhand, unfair, and damned un-English.' The Royal Navy was deeply suspicious of the technology. Doyle, writing in 1908, understood that submarine warfare would soon transform the balance of naval power."},
+  {id:18,name:"Simpson's-in-the-Strand",lat:51.5109,lng:-0.1228,type:"L",
+   stories:["TATDM","TVOF"],
+   desc:"Holmes's favourite restaurant — great joints of roast beef carved tableside, a warm wood-panelled refuge from the exhaustion of detection.",
+   fact:"Simpson's-in-the-Strand is real and still operates today, founded in 1828. It became equally famous for chess as for food. Doyle mentioned it specifically because Victorian readers would immediately picture the warm interior — Holmes always went there after difficult cases."},
+  {id:19,name:"St Bartholomew's Hospital",lat:51.5178,lng:-0.1012,type:"L",
+   stories:["ASIS"],
+   desc:"Where Watson first meets Holmes — in the chemical laboratory, where a pale young man with restless grey eyes is testing a new reagent for bloodstains.",
+   fact:"Doyle studied at Edinburgh, not Barts, but chose it as the meeting place because it was the most famous medical school in England. Watson is introduced as a veteran of Maiwand (Afghanistan, 1880) — a real battle with real British casualties."},
+  {id:20,name:"Criterion Bar, Piccadilly",lat:51.5097,lng:-0.1358,type:"L",
+   stories:["ASIS"],
+   desc:"Where Watson, newly returned from Afghanistan, runs into old acquaintance Stamford — who proposes to introduce him to an extraordinary fellow looking for someone to share rooms.",
+   fact:"The Criterion is real and still exists as a restaurant in Piccadilly Circus. Watson's chance meeting there is one of the most consequential pub encounters in literary history. Without it, the entire canon does not exist."},
+  {id:21,name:"Waterloo Station",lat:51.5031,lng:-0.1132,type:"L",
+   stories:["SILV","CROO","TATBP2"],
+   desc:"Departure point for trains to Winchester, Aldershot, and the Hampshire countryside — Holmes and Watson cab here when their cases lead south-west of London.",
+   fact:"Waterloo was the largest railway station in Britain for much of the Victorian era. Holmes was once reportedly recognised on the platform by a porter who had read Watson's accounts — leading Holmes to remark that publicity was the most dangerous consequence of Watson's literary vanity."},
+  {id:22,name:"Pentonville Prison, Islington",lat:51.5363,lng:-0.1103,type:"L",
+   stories:["ASIS"],
+   desc:"Where Jefferson Hope — the first murderer Holmes unmasks — dies of an aortic aneurysm the night before his trial, sparing Holmes from having to defend his deductions in court.",
+   fact:"Pentonville was one of the great Victorian model prisons, built on the panopticon principle. Hope's death before trial is a narrative convenience Doyle uses only once in the canon — he never again let fate remove his villains so tidily."},
+  {id:23,name:"Aldgate Station (Underground)",lat:51.5145,lng:-0.0756,type:"L",
+   stories:["TATBP2"],
+   desc:"Where a dead man is found on the Underground with stolen submarine plans in his pocket — but without a ticket, meaning he never entered any station alive.",
+   fact:"The London Underground opened in 1863, only 24 years before Doyle began writing. This story is one of the earliest to use the Tube as a plot device. Holmes deduces the body was placed on a train roof and fell off when it passed near a building."},
+
+  // COUNTRYSIDE
+  {id:24,name:"Baskerville Hall, Dartmoor",lat:50.5756,lng:-3.9543,type:"C",
+   stories:["HOUND"],
+   desc:"The gaunt granite hall on the edge of the great moor — ancestral seat of the Baskervilles, a family haunted by a legend of a spectral hound.",
+   fact:"Doyle visited Dartmoor to research the novel, staying at the Duchy Hotel in Princetown. The story was originally conceived with journalist Bertram Fletcher Robinson, whose coachman was named Baskerville — giving the family their name."},
+  {id:25,name:"Grimpen Mire, Dartmoor",lat:50.567,lng:-3.97,type:"C",
+   stories:["HOUND"],
+   desc:"A vast, treacherous bog where Stapleton hides his phosphorescent hound and where he himself disappears forever.",
+   fact:"Grimpen Mire is based on Fox Tor Mires, a real and genuinely dangerous Dartmoor bog. The phosphorus smeared on the hound — to make it glow in the dark — would in reality have been extremely painful for the animal."},
+  {id:26,name:"King's Pyland Stables, Devon",lat:50.59,lng:-3.86,type:"C",
+   stories:["SILV"],
+   desc:"Home stable of the missing racehorse Silver Blaze, where the key clue is a watchdog that did not bark in the night — meaning the intruder was known to it.",
+   fact:"'The curious incident of the dog in the night-time' — where the evidence is an absence — is arguably Holmes's most celebrated single deduction. Mark Haddon used the phrase as the title of his 2003 novel, introducing it to an entirely new generation."},
+  {id:27,name:"Stoke Moran Manor, Surrey",lat:51.1795,lng:-0.502,type:"C",
+   stories:["TATSB"],
+   desc:"The crumbling estate of Dr. Grimesby Roylott, where Holmes and Watson spend a night in darkness waiting for a trained swamp adder to emerge through a ventilation shaft.",
+   fact:"Doyle later admitted that a swamp adder cannot in fact climb a rope — snakes lack the musculature for it. He called The Speckled Band 'the very best of all my stories' despite the zoological impossibility at its heart."},
+  {id:28,name:"Boscombe Valley, Herefordshire",lat:51.918,lng:-2.594,type:"C",
+   stories:["TBVM"],
+   desc:"A rural estate near Ross-on-Wye, where Holmes reads footprints, trampled grass, and a dying man's last whispered word to reconstruct an entire hidden past.",
+   fact:"This story contains Holmes's celebrated variation of his most famous line — 'When you have eliminated the impossible, whatever remains, however improbable, must be the truth' — though it is always misquoted in shorter form by subsequent adaptations."},
+  {id:29,name:"Riding Thorpe Manor, Norfolk",lat:52.6521,lng:1.105,type:"C",
+   stories:["TATDM"],
+   desc:"An isolated manor in flat Norfolk countryside, where messages in dancing stick-figures escalate from curiosity to tragedy.",
+   fact:"Holmes's dancing men cipher is a simple monoalphabetic substitution — one of the most famous codes in detective fiction. The cipher has been used as a teaching tool in cryptography classes ever since. Holmes decodes it in time to understand the murder, but not to prevent it."},
+  {id:30,name:"The Priory School, Derbyshire",lat:53.254,lng:-1.602,type:"C",
+   stories:["TATPS"],
+   desc:"A remote Peak District school from which a duke's heir disappears overnight, leaving only tyre-tracks in moorland clay — which Holmes reads like a printed page.",
+   fact:"Holmes receives a cheque for six thousand pounds for this case — his largest recorded fee. He accepts it without embarrassment, noting that his time and expertise are not free. Watson is quietly shocked by the sum."},
+  {id:31,name:"Hurlstone Manor, Sussex",lat:50.891,lng:-0.442,type:"C",
+   stories:["MUSG"],
+   desc:"Holmes's very first case — predating Watson — where a missing butler, an ancient family ritual, and a hidden vault combine to reveal a crown lost since the English Civil War.",
+   fact:"The Musgrave Ritual establishes that Holmes was already extraordinary at university, keeping a skull on his mantelpiece and shooting bullet-holes in the wall out of boredom. His university years are the most tantalising gap in the canonical biography."},
+  {id:32,name:"Abbey Grange, Kent",lat:51.25,lng:0.3,type:"C",
+   stories:["TATAG"],
+   desc:"A country house where Holmes perceives the difference between a staged burglary and a genuine one — in the beeswing sediment of an untouched wineglass.",
+   fact:"In this story Holmes plays judge and jury himself rather than handing the culprit to the police — forming a private sympathy for the true perpetrator. He calls Watson his 'jury of one.' It is one of the most openly ethical stories in the canon."},
+  {id:33,name:"The Copper Beeches, Hampshire",lat:51.06,lng:-1.32,type:"C",
+   stories:["TATCC"],
+   desc:"A pleasant house near Winchester where a governess is asked to wear a specific dress and sit at a specific window — and Holmes understands why only when he sees the barred attic.",
+   fact:"The story contains Holmes's most chilling rural observation: 'It is my belief that the lowest and vilest alleys in London do not present a more dreadful record of sin than does the smiling and beautiful countryside.' This became one of the most quoted lines in the canon."},
+  {id:34,name:"Birlstone Manor, Sussex",lat:51.006,lng:0.021,type:"C",
+   stories:["TVOF"],
+   desc:"A moated Jacobean manor house where the master is found shot dead, his face destroyed — and Holmes senses something is wrong with the corpse before he has even seen it.",
+   fact:"The Valley of Fear has a double narrative: an English murder mystery followed by an American flashback to the Molly Maguires, a real Irish-American labour organisation whose infiltration by Pinkerton agents is here fictionalised with close fidelity to the historical record."},
+  {id:35,name:"Poldhu Bay, Cornwall",lat:50.0167,lng:-5.25,type:"C",
+   stories:["TATDF"],
+   desc:"A remote Cornish cove where Holmes retreats to study Chaldean roots — and is drawn into a series of deaths seemingly caused by a rare and deadly root.",
+   fact:"Poldhu is the exact location where Marconi transmitted the first transatlantic wireless signal in 1901 — a fact Doyle relished, since the story involves the most primitive and violent of poisons. Both Holmes and Watson are incapacitated by the devil's foot drug — the only time they are both rendered helpless simultaneously."},
+  {id:36,name:"Fulworth, Sussex (Retirement)",lat:50.7692,lng:0.1762,type:"C",
+   stories:["HLB","TATLM"],
+   desc:"Holmes's retirement cottage on the Sussex Downs, where he keeps bees, studies philosophy, and writes his magnum opus — until Germany comes calling in 1914.",
+   fact:"The Canon ends here in the most enigmatic fashion: Holmes alone on a summer evening, watching the gathering storm of war. Doyle never wrote a death scene for Holmes — he simply, quietly, stopped writing about him."},
+  {id:37,name:"Aldershot Barracks, Hampshire",lat:51.2482,lng:-0.7584,type:"C",
+   stories:["CROO"],
+   desc:"The garrison town where a colonel's wife is found weeping, a grotesquely twisted man is seen lurking outside, and a terrible history from the Indian frontier unravels.",
+   fact:"Aldershot was the main British Army base throughout the Victorian period. Watson's own military history — service in Afghanistan, the wound, the invalid's return — would have been a common story to any Aldershot man of the 1880s."},
+  {id:38,name:"Woking, Surrey (Naval Treaty)",lat:51.3168,lng:-0.5575,type:"C",
+   stories:["NAVA"],
+   desc:"Where the stricken Percy Phelps convalesces after the theft of the naval treaty — and Holmes makes an unexpected breakfast visit, lifting a dish cover to reveal not food, but the missing document.",
+   fact:"Holmes's theatrical revelation of the recovered treaty at the breakfast table is one of his most self-consciously dramatic moments. He could have revealed it the night before — but waited. Watson calls it 'one of the most remarkable instances of Holmes's showmanship.'"},
+  {id:39,name:"Shoscombe Old Place, Berkshire",lat:51.4254,lng:-1.3245,type:"C",
+   stories:["TATSH"],
+   desc:"A racing stable deep in debt, where the owner is behaving strangely, the family crypt is being disturbed at night, and a dog refuses to recognise its mistress.",
+   fact:"This is the very last Sherlock Holmes story Doyle ever wrote, published in 1927. It is quietly elegiac — Holmes and Watson are unmistakably older, the cases smaller, the world transformed by war. Watson observes that Holmes's hair has turned grey."},
+
+  // ABROAD
+  {id:40,name:"Reichenbach Falls, Switzerland",lat:46.7194,lng:8.1876,type:"A",
+   stories:["TFP","TATEH"],
+   desc:"The deafening waterfall above Meiringen where Holmes and Moriarty struggle at the cliff's edge — and apparently both plunge to their deaths.",
+   fact:"When The Final Problem was published in December 1893, the Strand Magazine lost 20,000 subscribers in a single month. Readers wept openly. Some wore black armbands in the street. Doyle received hate mail. He had genuinely intended to kill Holmes for good."},
+  {id:41,name:"Meiringen, Switzerland",lat:46.7198,lng:8.1844,type:"A",
+   stories:["TFP","TATEH"],
+   desc:"The Swiss village below the falls, where Watson is lured away by a false message about a sick English lady — leaving Holmes alone on the path above.",
+   fact:"Meiringen today contains a Sherlock Holmes Museum in the former English church, and the village declared Holmes an honorary citizen in 1991. Local hotels still advertise the Holmes connection over a century later."},
+  {id:42,name:"Lhasa, Tibet (Great Hiatus)",lat:29.6516,lng:91.1716,type:"A",
+   stories:["TATEH"],
+   desc:"During the three years Watson believed him dead, Holmes claims to have spent time with the head Lama — one of several extraordinary journeys during the Great Hiatus.",
+   fact:"Holmes claims to have visited Lhasa, Persia, Mecca, and Khartoum during his disappearance. Scholars have pointed out that these journeys, combined, are physically impossible in the time available — suggesting Holmes may have embellished his account somewhat."},
+  {id:43,name:"Montpellier, France",lat:43.6108,lng:3.8767,type:"A",
+   stories:["TATEH"],
+   desc:"Where Holmes conducted coal-tar derivative research during the Great Hiatus — the closest the canon comes to explaining how he actually spent his free years.",
+   fact:"Holmes's coal-tar research is consistent with his documented chemical interests. Victorian coal-tar chemistry was at the cutting edge of science — it gave rise to synthetic dyes, aspirin, and the pharmaceutical industry. Holmes was, in his way, a man of science first and a detective second."},
+  {id:44,name:"Prague, Bohemia",lat:50.0755,lng:14.4378,type:"A",
+   stories:["ASIB"],
+   desc:"Where Irene Adler retires with her husband Godfrey Norton after outwitting Holmes — taking the compromising photograph safely beyond anyone's reach.",
+   fact:"The King of Bohemia in the story is transparently based on a real royal scandal: Crown Prince Rudolf of Austria, whose affair with a commoner was an open secret in 1891. Doyle changed names but kept the essential details, which every reader recognised."},
+  {id:45,name:"Agra, India",lat:27.1767,lng:78.0081,type:"A",
+   stories:["TSOF"],
+   desc:"Where the Agra Treasure was amassed and the original pact was made — decades before Watson met Miss Morstan, whose fate was entangled with those rubies and emeralds.",
+   fact:"The Agra Fort is real and was the scene of enormous upheaval during the Indian Mutiny of 1857. Doyle's story gives the Mutiny a human face: not history, but a chest of jewels and four desperate men making a pact that ripples forward thirty years."},
+  {id:46,name:"New York, USA",lat:40.7128,lng:-74.006,type:"A",
+   stories:["TFOP"],
+   desc:"Where death threats — five orange pips in an envelope — are posted across the Atlantic to a quiet Sussex village. The case is one of Holmes's few documented failures.",
+   fact:"The Five Orange Pips ends with the murderers drowning at sea before justice reaches them. Holmes admits it as his most baffling failure. The story also contains an early and explicit condemnation of the Ku Klux Klan, remarkable for 1891 and largely overlooked."},
+  {id:47,name:"Chicago, USA (Valley of Fear)",lat:41.8781,lng:-87.6298,type:"A",
+   stories:["TVOF"],
+   desc:"The Midwest backstory: a Pinkerton detective undercover among violent secret societies, whose success follows him inexorably across the Atlantic to a Sussex manor house.",
+   fact:"Doyle's portrayal of the Molly Maguires and Pinkerton infiltrators reflects real events of the 1870s. The Pinkertons were real, their methods controversial. Doyle took documented history and folded it into a thriller with remarkable fidelity to the facts."},
+  {id:48,name:"Odessa, Ukraine",lat:46.4825,lng:30.7233,type:"A",
+   stories:["ASIB"],
+   desc:"Where Holmes was summoned to investigate the Trepoff murder — mentioned briefly as proof of his international reputation, a case Watson never recorded.",
+   fact:"The unrecorded cases — Trepoff in Odessa, the Giant Rat of Sumatra, the politician the lighthouse and the trained cormorant — have inspired hundreds of pastiches. Doyle mentioned them to suggest Holmes was far busier than Watson ever documented."},
+  {id:49,name:"East Sussex Coast (His Last Bow)",lat:51.1,lng:1.1,type:"A",
+   stories:["HLB"],
+   desc:"The Kent coast on the eve of the First World War, where Holmes — disguised for two years as Irish-American agent Altamont — delivers German spy Von Bork to the British authorities.",
+   fact:"His Last Bow is the only story narrated in third person and set in real historical time: August 1914, the actual month war was declared. Doyle wrote it in 1917 while the war was ongoing. At the end, Holmes drives away in a car. Watson gets in. We never see them together again."},
+  {id:50,name:"Lausanne, Switzerland",lat:46.5197,lng:6.6323,type:"A",
+   stories:["TATVE"],
+   desc:"Where Lady Frances Carfax is traced after her mysterious disappearance from continental hotels — and where Holmes identifies a sinister pair who have been following her.",
+   fact:"Lady Frances Carfax is one of the more poignant cases — a gentlewoman of reduced circumstances, drifting through European hotels with a small private income, entirely alone in the world. Holmes says she is 'a loose thread in the social fabric of England.'"},
+  {id:51,name:"Barcelona, Spain (Matters Unrecorded)",lat:41.3851,lng:2.1734,type:"A",
+   stories:["TATBP"],
+   desc:"One of several European cities obliquely referenced as locations of unrecorded cases during Holmes's most active years. Black Peter's backstory touches on the Norwegian and Spanish seas.",
+   fact:"The Adventure of Black Peter features Holmes in perhaps his most physical test of the canon — he attempts for three days to drive a harpoon through a pig's carcass and fails every time, yet deduces that the killer managed it in a single stroke."},
+  {id:52,name:"Strasbourg, France",lat:48.5734,lng:7.7521,type:"A",
+   stories:["TFP"],
+   desc:"One of the Continental stops on Holmes and Watson's flight from Moriarty's men — through Brussels, Strasbourg, and Geneva before the final confrontation in the Swiss mountains.",
+   fact:"Doyle had Holmes flee through the most familiar European tourist route of the Victorian era — the same cities his readers would have visited on the Grand Tour. It made the chase feel immediately real and geographically verifiable."},
+];
+
+let active=new Set(STORIES.map(s=>s.id));
+let markers=[];
+let curLoc=null;
+
+const map=L.map('map',{center:[52,-1.5],zoom:6,zoomControl:true});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom:19,className:'dark-tiles'
+}).addTo(map);
+
+const TYPECOLOR={
+  L:{bg:'rgba(196,131,10,.32)',br:'#c4830a',glow:'rgba(196,131,10,.55)'},
+  C:{bg:'rgba(106,158,74,.32)',br:'#6a9e4a',glow:'rgba(106,158,74,.55)'},
+  A:{bg:'rgba(74,143,193,.32)',br:'#4a8fc1',glow:'rgba(74,143,193,.55)'},
+};
+
+function mkIcon(type,dim){
+  const c=TYPECOLOR[type]||TYPECOLOR.L;
+  const op=dim?'0.15':'1';
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:14px;height:14px;border-radius:50%;background:${c.bg};border:2px solid ${c.br};box-shadow:0 0 7px ${c.glow};cursor:pointer;opacity:${op};transition:opacity .2s"></div>`,
+    iconSize:[14,14],iconAnchor:[7,7],popupAnchor:[0,-10]
+  });
+}
+
+function storyTitle(id){const s=STORIES.find(x=>x.id===id);return s?s.title:id}
+
+function popupHTML(loc){
+  const tags=loc.stories.map(id=>`<span class="ptag">${storyTitle(id)}</span>`).join('');
+  return `<div class="pbody"><div class="pname">${loc.name}</div><div class="pdesc">${loc.desc}</div><div class="pfact">${loc.fact}</div><div class="ptags">${tags}</div></div>`;
+}
+
+function initMarkers(){
+  LOCS.forEach(loc=>{
+    const dim=!loc.stories.some(id=>active.has(id));
+    const m=L.marker([loc.lat,loc.lng],{icon:mkIcon(loc.type,dim)});
+    m.bindPopup(popupHTML(loc),{maxWidth:290,className:'holmes-popup'});
+    m.on('click',()=>showPanel(loc));
+    m.addTo(map);
+    markers.push({m,loc,dim});
+  });
+  updateCount();
+}
+
+function updateCount(){
+  let v=0;markers.forEach(o=>{if(!o.dim)v++;});
+  document.getElementById('vcnt').textContent=v;
+}
+
+function updateMarkers(){
+  markers.forEach(o=>{
+    const dim=!o.loc.stories.some(id=>active.has(id));
+    if(dim!==o.dim){o.dim=dim;o.m.setIcon(mkIcon(o.loc.type,dim));}
+    o.m.setPopupContent(popupHTML(o.loc));
+  });
+  updateCount();
+  if(curLoc)showPanel(curLoc);
+}
+
+function showPanel(loc){
+  curLoc=loc;
+  const p=document.getElementById('locpanel');
+  const tags=loc.stories.map(id=>{
+    const on=active.has(id);
+    return `<span class="tag${on?'':' off'}" onclick="toggle('${id}')">${storyTitle(id)}</span>`;
+  }).join('');
+  p.innerHTML=`<div class="locname">${loc.name}</div><div class="locdesc">${loc.desc}</div><div class="fact-badge">✦ Fun fact</div><div class="locfact">${loc.fact}</div><div class="loc-sl">Appears in</div><div class="tags">${tags}</div>`;
+  p.classList.add('vis');
+}
+
+function renderSidebar(){
+  const c=document.getElementById('filters');c.innerHTML='';
+  COLS.forEach(col=>{
+    const ss=STORIES.filter(s=>s.col===col.id);
+    if(!ss.length)return;
+    const h=document.createElement('div');h.className='col-hdr';h.textContent=col.label;c.appendChild(h);
+    ss.forEach(s=>{
+      const d=document.createElement('div');
+      d.className='srow'+(active.has(s.id)?' on':'');
+      d.innerHTML=`<div class="chk"></div><div class="sinfo"><div class="stitle">${s.title}</div><div class="smeta">${s.year}</div></div>`;
+      d.addEventListener('click',()=>toggle(s.id));
+      c.appendChild(d);
+    });
+  });
+}
+
+function toggle(id){
+  if(active.has(id))active.delete(id);else active.add(id);
+  renderSidebar();updateMarkers();
+}
+function selectAll(){STORIES.forEach(s=>active.add(s.id));renderSidebar();updateMarkers()}
+function selectNone(){active.clear();renderSidebar();updateMarkers()}
+
+renderSidebar();
+initMarkers();
+</script>
+</body>
+</html>
