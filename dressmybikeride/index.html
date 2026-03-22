@@ -7,206 +7,191 @@
 <meta name="description" content="Välj startpunkt på kartan, hämta aktuellt väder och få klädrekommendationer för din cykeltur.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
 
 <style>
-/* ── Reset & base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:       #0f1012;
-  --surface:  #17191d;
-  --surface2: #1e2026;
-  --border:   rgba(255,255,255,0.07);
-  --border2:  rgba(255,255,255,0.13);
-  --text:     #dddfe4;
-  --muted:    #6b7280;
-  --hint:     #3d4250;
-  --accent:   #f0a030;
-  --accent2:  #4a9eda;
-  --success:  #41b87a;
-  --danger:   #e05555;
-  --warning:  #d97706;
-  --purple:   #8b78e6;
-  --font-sans: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'DM Mono', 'Courier New', monospace;
-  --radius:   6px;
-  --radius-lg: 10px;
+  --k-ink:         #111111;
+  --k-bg:          #F7F7F5;
+  --k-white:       #FFFFFF;
+  --k-mid:         #666662;
+  --k-faint:       #E2E2DF;
+  --k-orange:      #D96B1F;
+  --k-orange-t:    rgba(217,107,31,0.10);
+  --k-orange-tt:   rgba(217,107,31,0.06);
+  --k-orange-pale: #F5DFC0;
+  --k-sans:        -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --k-serif:       'Playfair Display', Georgia, serif;
+  --k-mono:        ui-monospace, 'Courier New', monospace;
+  --k-radius:      10px;
+  --k-radius-sm:   7px;
+  --k-border:      0.5px solid var(--k-faint);
 }
 
-html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Layout ── */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--k-bg);
+  color: var(--k-ink);
+  font-family: var(--k-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
 #app { display: flex; flex-direction: column; height: 100vh; min-height: 0; }
 
-/* ── Header ── */
+/* Header */
 header {
   flex-shrink: 0;
-  height: 52px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  height: 50px;
+  background: var(--k-white);
+  border-bottom: var(--k-border);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 22px;
   gap: 16px;
   z-index: 1001;
 }
 
 .brand {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--accent);
+  font-family: var(--k-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--k-ink);
   flex-shrink: 0;
+  letter-spacing: -0.01em;
 }
 
-.brand-sep { color: var(--hint); margin: 0 2px; }
+.brand-rule { width: 1px; height: 16px; background: var(--k-faint); flex-shrink: 0; }
 
 .location-bar {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
 }
 
 .location-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text);
+  color: var(--k-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .location-coords {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
+  font-family: var(--k-mono);
+  font-size: 10px;
+  color: var(--k-mid);
   white-space: nowrap;
 }
 
-.dot-sep { width: 4px; height: 4px; border-radius: 50%; background: var(--hint); flex-shrink: 0; }
-
-.status-chip {
+.status-pill {
   flex-shrink: 0;
-  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--k-mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  color: var(--muted);
+  letter-spacing: 0.07em;
+  padding: 4px 11px;
+  border-radius: 100px;
+  border: var(--k-border);
+  color: var(--k-mid);
+  background: var(--k-bg);
   transition: all 0.2s;
 }
-.status-chip.loading { border-color: var(--accent); color: var(--accent); }
-.status-chip.ready   { border-color: var(--success); color: var(--success); }
-.status-chip.error   { border-color: var(--danger);  color: var(--danger);  }
 
-/* ── Body split ── */
+.status-pill.loading { border-color: var(--k-orange); color: var(--k-orange); background: var(--k-orange-tt); }
+.status-pill.ready   { border-color: #5a9e6f; color: #3d7a52; background: rgba(90,158,111,0.06); }
+.status-pill.error   { border-color: #c05050; color: #a03838; background: rgba(192,80,80,0.06); }
+
+/* Body */
 .body-row { display: flex; flex: 1 1 0; overflow: hidden; min-height: 0; }
 
-/* ── Left panel ── */
-.panel-left {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+/* Panels */
+.panel {
+  background: var(--k-white);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--hint) transparent;
+  scrollbar-color: var(--k-faint) transparent;
 }
 
-.panel-section {
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--border);
-}
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-thumb { background: var(--k-faint); }
 
+.panel-left  { width: 272px; flex-shrink: 0; border-right: var(--k-border); }
+.panel-right { width: 268px; flex-shrink: 0; border-left: var(--k-border); }
+
+.panel-section { padding: 16px 20px; border-bottom: var(--k-border); }
 .panel-section:last-child { border-bottom: none; }
 
-.sec-head {
-  font-family: var(--font-mono);
+.sec-label {
+  font-family: var(--k-mono);
   font-size: 10px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--k-mid);
   margin-bottom: 12px;
 }
 
-/* ── Weather cells ── */
+/* Weather */
 .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 
 .w-cell {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--k-bg);
+  border: var(--k-border);
+  border-radius: var(--k-radius-sm);
   padding: 10px 12px;
 }
 
 .w-cell .wl {
-  font-family: var(--font-mono);
+  font-family: var(--k-mono);
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 4px;
+  color: var(--k-mid);
+  margin-bottom: 3px;
 }
 
 .w-cell .wv {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 300;
-  color: var(--text);
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--k-ink);
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.w-cell .wu { font-size: 11px; color: var(--muted); }
-.w-cell.hi-cell { border-color: rgba(74,158,218,0.35); }
-.w-cell.hi-cell .wv { color: var(--accent2); }
+.w-cell .wu { font-size: 11px; color: var(--k-mid); }
+.w-cell.accent-cell { border-color: rgba(217,107,31,0.3); background: var(--k-orange-tt); }
+.w-cell.accent-cell .wv { color: var(--k-orange); }
 
-.weather-desc {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.weather-desc { margin-top: 9px; font-size: 12px; color: var(--k-mid); }
 
-/* ── Sliders ── */
+/* Sliders */
 .slider-block { margin-bottom: 14px; }
 .slider-block:last-child { margin-bottom: 0; }
 
-.slider-hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
-}
-
-.slider-hd .sl-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.slider-hd .sl-val {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--accent);
-}
+.slider-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.slider-hd .sl-name { font-size: 12px; font-weight: 500; color: var(--k-ink); }
+.slider-hd .sl-val  { font-family: var(--k-mono); font-size: 12px; color: var(--k-orange); }
 
 input[type=range] {
   -webkit-appearance: none;
   width: 100%;
-  height: 3px;
-  background: var(--border2);
+  height: 2px;
+  background: var(--k-faint);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
@@ -214,86 +199,91 @@ input[type=range] {
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg);
+  background: var(--k-orange);
+  border: 2px solid var(--k-white);
+  box-shadow: 0 0 0 1px var(--k-faint);
   cursor: pointer;
   transition: transform 0.1s;
 }
 
 input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
-/* ── Intensity buttons ── */
+/* Intensitet */
 .int-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
 
 .int-btn {
-  border: 1px solid var(--border2);
-  background: var(--surface2);
-  color: var(--muted);
+  border: var(--k-border);
+  background: var(--k-bg);
+  color: var(--k-mid);
   padding: 7px 4px;
-  font-family: var(--font-sans);
+  font-family: var(--k-sans);
   font-size: 12px;
   font-weight: 500;
-  border-radius: var(--radius);
+  border-radius: var(--k-radius-sm);
   cursor: pointer;
   text-align: center;
   transition: all 0.15s;
+  letter-spacing: -0.1px;
 }
 
-.int-btn:hover { border-color: var(--accent); color: var(--accent); }
-.int-btn.active { background: rgba(240,160,48,0.12); border-color: var(--accent); color: var(--accent); }
+.int-btn:hover { border-color: var(--k-orange); color: var(--k-orange); }
+.int-btn.active { background: var(--k-orange); border-color: var(--k-orange); color: #fff; }
 
-/* ── Map ── */
+/* Karta */
 #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; }
+.leaflet-tile-pane { filter: saturate(0.55) brightness(0.98); }
 
-/* Dark tile filter */
-.leaflet-tile-pane { filter: brightness(0.55) saturate(0.5) hue-rotate(5deg); }
-
-/* Leaflet popup */
 .leaflet-popup-content-wrapper {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg) !important;
-  color: var(--text);
-  font-family: var(--font-sans);
+  background: var(--k-white) !important;
+  border: var(--k-border) !important;
+  border-radius: var(--k-radius) !important;
+  color: var(--k-ink);
+  font-family: var(--k-sans);
   font-size: 13px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 20px rgba(17,17,17,0.09) !important;
 }
 .leaflet-popup-tip-container { display: none; }
-.leaflet-popup-content { margin: 12px 16px; }
+.leaflet-popup-content { margin: 10px 14px; }
+
 .leaflet-control-zoom a {
-  background: var(--surface) !important;
-  color: var(--text) !important;
-  border-color: var(--border2) !important;
+  background: var(--k-white) !important;
+  color: var(--k-ink) !important;
+  border-color: var(--k-faint) !important;
 }
-.leaflet-control-zoom a:hover { background: var(--surface2) !important; }
+.leaflet-control-zoom a:hover { background: var(--k-bg) !important; }
+
 .leaflet-control-attribution {
-  background: rgba(15,16,18,0.7) !important;
-  color: var(--muted) !important;
+  background: rgba(247,247,245,0.88) !important;
+  color: var(--k-mid) !important;
   font-size: 10px !important;
 }
-.leaflet-control-attribution a { color: var(--muted) !important; }
+.leaflet-control-attribution a { color: var(--k-mid) !important; }
 
-/* ── Right panel ── */
-.panel-right {
-  width: 270px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--hint) transparent;
+.map-hint {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: var(--k-white);
+  border: var(--k-border);
+  border-radius: 100px;
+  padding: 7px 18px;
+  font-size: 12px;
+  color: var(--k-mid);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(17,17,17,0.07);
 }
 
-/* ── Effective temp block ── */
+/* Analys */
 .eff-block {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--k-bg);
+  border: var(--k-border);
+  border-radius: var(--k-radius);
   padding: 14px 16px;
   margin-bottom: 10px;
   display: flex;
@@ -302,184 +292,130 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 }
 
 .eff-label {
-  font-family: var(--font-mono);
+  font-family: var(--k-mono);
   font-size: 9px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--k-mid);
   margin-bottom: 6px;
 }
 
 .eff-breakdown {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.8;
+  font-family: var(--k-mono);
+  font-size: 10px;
+  color: var(--k-mid);
+  line-height: 1.9;
 }
 
 .eff-number {
-  font-family: var(--font-mono);
-  font-size: 42px;
+  font-size: 44px;
   font-weight: 300;
   line-height: 1;
   text-align: right;
+  letter-spacing: -0.03em;
 }
 
-/* ── Kit items ── */
-.alert-row {
-  background: rgba(224,85,85,0.08);
-  border: 1px solid rgba(224,85,85,0.25);
-  border-radius: var(--radius);
-  padding: 8px 12px;
+/* Callouts med manicula */
+.callout {
+  background: var(--k-orange-tt);
+  border-left: 2px solid var(--k-orange);
+  border-radius: 0 var(--k-radius) var(--k-radius) 0;
+  padding: 10px 14px 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+
+.callout.danger {
+  background: rgba(192,80,80,0.05);
+  border-left-color: #c05050;
+}
+
+.callout p {
   font-size: 12px;
-  color: var(--danger);
-  margin-bottom: 6px;
-  line-height: 1.4;
+  line-height: 1.55;
+  color: var(--k-ink);
+  margin: 0;
 }
 
-.alert-row.warn {
-  background: rgba(217,119,6,0.08);
-  border-color: rgba(217,119,6,0.25);
-  color: var(--warning);
-}
+.callout.danger p { color: #8a2e2e; }
 
+/* Kit */
 .kit-row {
   display: flex;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--k-border);
 }
-
 .kit-row:last-child { border-bottom: none; }
 
-.kit-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius);
+.kit-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--k-radius-sm);
+  background: var(--k-bg);
+  border: var(--k-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
-.kit-body {}
-
 .kit-cat {
-  font-family: var(--font-mono);
+  font-family: var(--k-mono);
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 2px;
+  color: var(--k-mid);
+  margin-bottom: 1px;
 }
 
 .kit-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text);
+  color: var(--k-ink);
   line-height: 1.3;
+  letter-spacing: -0.1px;
 }
 
-.kit-note { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.kit-note { font-size: 11px; color: var(--k-mid); margin-top: 2px; line-height: 1.4; }
 
-/* ── Map pulse marker ── */
-@keyframes pulse-ring {
-  0%   { transform: scale(0.6); opacity: 1; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-
-.pulse-marker {
-  position: relative;
-  width: 14px;
-  height: 14px;
-}
-
-.pulse-marker .core {
-  position: absolute;
-  top: 0; left: 0;
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg);
-}
-
-.pulse-marker .ring {
-  position: absolute;
-  top: 0; left: 0;
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.4;
-  animation: pulse-ring 1.8s ease-out infinite;
-}
-
-/* ── Placeholder / loading states ── */
-.empty-state {
-  padding: 20px 0;
-  text-align: center;
-  color: var(--hint);
-  font-size: 12px;
-  font-style: italic;
-}
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .spinner {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--border2);
-  border-top-color: var(--accent);
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--k-faint);
+  border-top-color: var(--k-orange);
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
   vertical-align: middle;
   margin-right: 6px;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.loading-row { display: flex; align-items: center; color: var(--k-mid); font-size: 12px; padding: 6px 0; }
+.empty-state { color: var(--k-mid); font-size: 12px; padding: 8px 0; }
 
-.loading-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 8px 0;
-}
-
-/* ── Map click hint ── */
-.map-hint {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: 20px;
-  padding: 8px 18px;
-  font-size: 12px;
-  color: var(--muted);
-  pointer-events: none;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--hint); border-radius: 2px; }
-
-/* ── Responsive: collapse right panel on narrow screens ── */
+/* Responsive */
 @media (max-width: 900px) {
-  .panel-left { width: 240px; }
+  .panel-left  { width: 240px; }
   .panel-right { width: 230px; }
 }
 
 @media (max-width: 720px) {
   .body-row { flex-direction: column; }
-  .panel-left, .panel-right { width: 100%; max-height: 220px; border: none; border-bottom: 1px solid var(--border); }
-  #map { min-height: 260px; }
+  .panel-left, .panel-right {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-left: none;
+    border-bottom: var(--k-border);
+  }
 }
 </style>
 </head>
@@ -487,34 +423,33 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
 <div id="app">
 
-  <!-- HEADER -->
   <header>
-    <div class="brand">KIT<span class="brand-sep">/</span>ADVISOR</div>
-    <div class="dot-sep"></div>
+    <div class="brand">Kit Advisor</div>
+    <div class="brand-rule"></div>
     <div class="location-bar">
+      <i class="ph ph-map-pin" style="font-size:14px;color:var(--k-mid);flex-shrink:0;"></i>
       <div class="location-name" id="locName">Klicka på kartan för att välja startpunkt</div>
       <div class="location-coords" id="locCoords"></div>
     </div>
-    <div class="status-chip" id="statusChip">VÄNTAR</div>
+    <div class="status-pill" id="statusChip">
+      <i class="ph ph-circle" style="font-size:8px;"></i> Väntar
+    </div>
   </header>
 
-  <!-- MAIN BODY -->
   <div class="body-row">
 
-    <!-- LEFT: Weather + params -->
-    <div class="panel-left">
+    <!-- Vänster: Väder + parametrar -->
+    <div class="panel panel-left">
 
-      <!-- Weather -->
       <div class="panel-section">
-        <div class="sec-head">Väder just nu</div>
+        <div class="sec-label">Väder just nu</div>
         <div id="weatherArea">
-          <div class="empty-state">Välj plats på kartan</div>
+          <div class="empty-state">Välj plats på kartan.</div>
         </div>
       </div>
 
-      <!-- Ride params -->
       <div class="panel-section">
-        <div class="sec-head">Turkonfiguration</div>
+        <div class="sec-label">Tur</div>
 
         <div class="slider-block">
           <div class="slider-hd">
@@ -533,9 +468,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
         </div>
 
         <div class="slider-block">
-          <div class="slider-hd">
-            <span class="sl-name">Intensitet</span>
-          </div>
+          <div class="slider-hd"><span class="sl-name">Intensitet</span></div>
           <div class="int-grid">
             <button class="int-btn active" data-int="easy">Lugn</button>
             <button class="int-btn"        data-int="mod">Tempo</button>
@@ -546,26 +479,28 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
     </div>
 
-    <!-- MIDDLE: Map -->
+    <!-- Mitten: Karta -->
     <div style="position:relative; flex:1 1 0; min-width:0; min-height:0; overflow:hidden;">
       <div id="map"></div>
-      <div class="map-hint" id="mapHint">↓ Klicka var som helst på kartan</div>
+      <div class="map-hint" id="mapHint">
+        <i class="ph ph-cursor-click" style="font-size:12px;vertical-align:middle;margin-right:4px;"></i>Klicka för att välja startpunkt
+      </div>
     </div>
 
-    <!-- RIGHT: Analysis + kit -->
-    <div class="panel-right">
+    <!-- Höger: Analys + utrustning -->
+    <div class="panel panel-right">
 
       <div class="panel-section">
-        <div class="sec-head">Analys</div>
+        <div class="sec-label">Analys</div>
         <div id="analysisArea">
-          <div class="empty-state">Välj plats för beräkning</div>
+          <div class="empty-state">Välj plats för beräkning.</div>
         </div>
       </div>
 
       <div class="panel-section" style="flex:1;">
-        <div class="sec-head">Utrustning</div>
+        <div class="sec-label">Utrustning</div>
         <div id="kitArea">
-          <div class="empty-state">Välj plats för rekommendationer</div>
+          <div class="empty-state">Välj plats för rekommendationer.</div>
         </div>
       </div>
 
@@ -574,138 +509,117 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
-//  MAP SETUP
-// ═══════════════════════════════════════════════
-const map = L.map('map', {
-  center: [55.676, 12.568],
-  zoom: 9,
-  zoomControl: true,
-  attributionControl: true
-});
-
-// Safari fix: force Leaflet to recalculate size after layout settles
-setTimeout(() => map.invalidateSize(), 100);
-setTimeout(() => map.invalidateSize(), 400);
+// MAP
+const map = L.map('map', { center:[55.676,12.568], zoom:9 });
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 18
 }).addTo(map);
 
-// Custom pulsing marker
-const pulseIcon = L.divIcon({
-  html: `<div class="pulse-marker"><div class="ring"></div><div class="core"></div></div>`,
-  className: '',
-  iconSize: [14, 14],
-  iconAnchor: [7, 7]
+setTimeout(() => map.invalidateSize(), 100);
+setTimeout(() => map.invalidateSize(), 400);
+
+const markerIcon = L.divIcon({
+  html: `<svg viewBox="0 0 24 36" width="24" height="36" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C7.58 2 4 5.58 4 10c0 7 8 24 8 24s8-17 8-24c0-4.42-3.58-8-8-8z" fill="#D96B1F"/>
+    <circle cx="12" cy="10" r="3.5" fill="white"/>
+  </svg>`,
+  iconSize:[24,36], iconAnchor:[12,36], className:''
 });
 
-let marker = null;
-let currentWeather = null;
-let intensity = 'easy';
+let marker = null, currentWeather = null, intensity = 'easy';
 
-// ═══════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════
-function setStatus(state, text) {
+// Manicula SVG
+const MANICULA = `<svg width="22" height="14" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:2px">
+  <path d="M5 28 L36 28" stroke="#D96B1F" stroke-width="3" stroke-linecap="round"/>
+  <path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#D96B1F"/>
+</svg>`;
+
+const MANICULA_DANGER = `<svg width="22" height="14" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:2px">
+  <path d="M5 28 L36 28" stroke="#c05050" stroke-width="3" stroke-linecap="round"/>
+  <path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#c05050"/>
+</svg>`;
+
+function setStatus(cls, text, icon) {
   const el = document.getElementById('statusChip');
-  el.className = 'status-chip ' + state;
-  el.textContent = text;
+  el.className = 'status-pill ' + cls;
+  el.innerHTML = `<i class="ph ${icon}" style="font-size:8px;"></i> ${text}`;
 }
-
-// ═══════════════════════════════════════════════
-//  MAP CLICK
-// ═══════════════════════════════════════════════
-map.on('click', async (e) => {
-  const { lat, lng } = e.latlng;
-  placeMarker(lat, lng);
-  document.getElementById('mapHint').style.display = 'none';
-  document.getElementById('locCoords').textContent = `${lat.toFixed(4)}° N  ${lng.toFixed(4)}° E`;
-  setStatus('loading', 'HÄMTAR…');
-  document.getElementById('weatherArea').innerHTML = '<div class="loading-row"><span class="spinner"></span>Hämtar väderdata…</div>';
-  document.getElementById('analysisArea').innerHTML = '<div class="empty-state">Väntar på väder…</div>';
-  document.getElementById('kitArea').innerHTML = '<div class="empty-state">Väntar på väder…</div>';
-
-  try {
-    const [weather, locName] = await Promise.all([
-      fetchWeather(lat, lng),
-      reverseGeocode(lat, lng)
-    ]);
-    currentWeather = weather;
-    document.getElementById('locName').textContent = locName;
-    renderWeather(weather);
-    renderAnalysis();
-    setStatus('ready', 'KLAR');
-  } catch (err) {
-    console.error(err);
-    document.getElementById('weatherArea').innerHTML = '<div class="alert-row">Kunde inte hämta väderdata. Kontrollera nätverket.</div>';
-    setStatus('error', 'FEL');
-  }
-});
 
 function placeMarker(lat, lng) {
   if (marker) map.removeLayer(marker);
-  marker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map);
+  marker = L.marker([lat,lng], {icon:markerIcon}).addTo(map);
 }
 
-// ═══════════════════════════════════════════════
-//  OPEN-METEO
-// ═══════════════════════════════════════════════
+map.on('click', async (e) => {
+  const {lat, lng} = e.latlng;
+  placeMarker(lat, lng);
+  document.getElementById('mapHint').style.display = 'none';
+  document.getElementById('locCoords').textContent = `${lat.toFixed(4)}° N  ${lng.toFixed(4)}° E`;
+  setStatus('loading','Hämtar…','ph-circle-notch');
+  document.getElementById('weatherArea').innerHTML =
+    '<div class="loading-row"><span class="spinner"></span>Hämtar väderdata…</div>';
+  document.getElementById('analysisArea').innerHTML =
+    '<div class="empty-state">Väntar på väder…</div>';
+  document.getElementById('kitArea').innerHTML =
+    '<div class="empty-state">Väntar på väder…</div>';
+  try {
+    const [w, name] = await Promise.all([fetchWeather(lat,lng), reverseGeocode(lat,lng)]);
+    currentWeather = w;
+    document.getElementById('locName').textContent = name;
+    renderWeather(w);
+    renderAnalysis();
+    setStatus('ready','Klar','ph-check-circle');
+  } catch(err) {
+    console.error(err);
+    document.getElementById('weatherArea').innerHTML =
+      `<div class="callout danger">${MANICULA_DANGER}<p>Kunde inte hämta väderdata.</p></div>`;
+    setStatus('error','Fel','ph-warning');
+  }
+});
+
 async function fetchWeather(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m,weather_code,cloud_cover&wind_speed_unit=kmh&timezone=auto`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m,weather_code&wind_speed_unit=kmh&timezone=auto`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Weather API error');
-  const data = await res.json();
-  const c = data.current;
+  if (!res.ok) throw new Error('API error');
+  const d = await res.json();
+  const c = d.current;
   return {
-    temp:     c.temperature_2m,
-    apparent: c.apparent_temperature,
-    wind:     c.wind_speed_10m,
-    gusts:    c.wind_gusts_10m,
-    precip:   c.precipitation,
-    humidity: c.relative_humidity_2m,
-    wcode:    c.weather_code,
-    cloud:    c.cloud_cover
+    temp:c.temperature_2m, apparent:c.apparent_temperature,
+    wind:c.wind_speed_10m, gusts:c.wind_gusts_10m,
+    precip:c.precipitation, humidity:c.relative_humidity_2m, wcode:c.weather_code
   };
 }
 
-// ═══════════════════════════════════════════════
-//  NOMINATIM REVERSE GEOCODE
-// ═══════════════════════════════════════════════
 async function reverseGeocode(lat, lng) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=sv`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'sv' } });
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      {headers:{'Accept-Language':'sv'}}
+    );
     const d = await res.json();
     const a = d.address || {};
-    const city = a.city || a.town || a.village || a.municipality || a.county || 'Okänd plats';
-    const country = a.country || '';
-    return country ? `${city}, ${country}` : city;
-  } catch {
-    return 'Plats vald';
-  }
+    const city = a.city||a.town||a.village||a.municipality||a.county||'Okänd plats';
+    return a.country ? `${city}, ${a.country}` : city;
+  } catch { return 'Plats vald'; }
 }
 
-// ═══════════════════════════════════════════════
-//  WEATHER RENDER
-// ═══════════════════════════════════════════════
 function wDesc(code) {
-  if (code === 0)       return { icon: '☀️', text: 'Klart' };
-  if (code <= 3)        return { icon: '⛅', text: 'Delvis molnigt' };
-  if (code <= 48)       return { icon: '🌫️', text: 'Dimma' };
-  if (code <= 55)       return { icon: '🌦️', text: 'Duggregn' };
-  if (code <= 67)       return { icon: '🌧️', text: 'Regn' };
-  if (code <= 77)       return { icon: '❄️', text: 'Snö' };
-  if (code <= 82)       return { icon: '🌦️', text: 'Regnskurar' };
-  return { icon: '⛈️', text: 'Åska' };
+  if (code===0)  return '☀️ Klart';
+  if (code<=3)   return '⛅ Delvis molnigt';
+  if (code<=48)  return '🌫️ Dimma';
+  if (code<=55)  return '🌦️ Duggregn';
+  if (code<=67)  return '🌧️ Regn';
+  if (code<=77)  return '❄️ Snö';
+  if (code<=82)  return '🌦️ Regnskurar';
+  return '⛈️ Åska';
 }
 
 function renderWeather(w) {
-  const d = wDesc(w.wcode);
   document.getElementById('weatherArea').innerHTML = `
     <div class="weather-grid">
-      <div class="w-cell hi-cell">
+      <div class="w-cell accent-cell">
         <div class="wl">Temp</div>
         <div class="wv">${w.temp.toFixed(1)}<span class="wu"> °C</span></div>
       </div>
@@ -722,205 +636,170 @@ function renderWeather(w) {
         <div class="wv">${Math.round(w.gusts)}<span class="wu"> km/h</span></div>
       </div>
     </div>
-    <div class="weather-desc">${d.icon} ${d.text}${w.precip > 0 ? ` · ${w.precip.toFixed(1)} mm` : ''}</div>
+    <div class="weather-desc">${wDesc(w.wcode)}${w.precip>0 ? ` &nbsp;·&nbsp; ${w.precip.toFixed(1)} mm` : ''}</div>
   `;
 }
 
-// ═══════════════════════════════════════════════
-//  FORMULA ENGINE
-// ═══════════════════════════════════════════════
-function calcWindChill(T, V) {
-  if (T >= 10 || V < 4.8) return T;
-  return 13.12 + 0.6215 * T - 11.37 * Math.pow(V, 0.16) + 0.3965 * T * Math.pow(V, 0.16);
+function windChill(T, V) {
+  if (T>=10 || V<4.8) return T;
+  return 13.12 + 0.6215*T - 11.37*Math.pow(V,0.16) + 0.3965*T*Math.pow(V,0.16);
 }
 
-function calcEffective(weather) {
-  const T       = weather.temp;
-  const windAmb = weather.wind;
-  const speed   = parseInt(document.getElementById('speedSlider').value);
-  const dur     = parseFloat(document.getElementById('durSlider').value);
-
-  const effWind  = windAmb + speed;
-  const wc       = calcWindChill(T, effWind);
-
-  const effortMap  = { easy: 4, mod: 7, hard: 11 };
-  const effort     = effortMap[intensity];
-  const durPenalty = dur > 3 ? -2 : dur > 1.5 ? -1 : 0;
-  const humPenalty = weather.humidity > 85 ? -2 : 0;
-
+function calcEffective(w) {
+  const speed = parseInt(document.getElementById('speedSlider').value);
+  const dur   = parseFloat(document.getElementById('durSlider').value);
+  const effV  = w.wind + speed;
+  const wc    = windChill(w.temp, effV);
+  const effort = {easy:4, mod:7, hard:11}[intensity];
+  const durP  = dur>3 ? -2 : dur>1.5 ? -1 : 0;
+  const humP  = w.humidity>85 ? -2 : 0;
   return {
-    eff: Math.round((wc + effort + durPenalty + humPenalty) * 10) / 10,
-    wc:  Math.round(wc * 10) / 10,
-    effort, durPenalty, humPenalty
+    eff: Math.round((wc+effort+durP+humP)*10)/10,
+    wc:  Math.round(wc*10)/10,
+    effort, durP, humP
   };
 }
 
-// ═══════════════════════════════════════════════
-//  ANALYSIS RENDER
-// ═══════════════════════════════════════════════
 function renderAnalysis() {
   if (!currentWeather) return;
-  const { eff, wc, effort, durPenalty, humPenalty } = calcEffective(currentWeather);
+  const {eff, wc, effort, durP, humP} = calcEffective(currentWeather);
 
-  let color = '#41b87a';
-  if (eff < 13) color = '#4a9eda';
-  if (eff < 6)  color = '#8b78e6';
-  if (eff < 0)  color = '#b060e8';
-  if (eff > 24) color = '#e05555';
+  let color = '#3d7a52';
+  if (eff<13) color='#2e6ea6';
+  if (eff<6)  color='#5a48b4';
+  if (eff<0)  color='#8040b0';
+  if (eff>24) color='#b83c3c';
 
-  let breakdown = `Vindkyla: ${wc}°C<br>Ansträngning: +${effort}°C`;
-  if (durPenalty < 0) breakdown += `<br>Turlängd: ${durPenalty}°C`;
-  if (humPenalty < 0) breakdown += `<br>Hög fukt: ${humPenalty}°C`;
+  let bd = `Vindkyla: ${wc}°C<br>Ansträngning: +${effort}°C`;
+  if (durP<0) bd += `<br>Turlängd: ${durP}°C`;
+  if (humP<0) bd += `<br>Hög fukt: ${humP}°C`;
 
   document.getElementById('analysisArea').innerHTML = `
     <div class="eff-block">
       <div>
         <div class="eff-label">Upplevd temp</div>
-        <div class="eff-breakdown">${breakdown}</div>
+        <div class="eff-breakdown">${bd}</div>
       </div>
-      <div class="eff-number" style="color:${color}">${eff > 0 ? '+' : ''}${eff}°</div>
+      <div class="eff-number" style="color:${color}">${eff>0?'+':''}${eff}°</div>
     </div>
   `;
-
   renderKit(eff);
 }
 
-// ═══════════════════════════════════════════════
-//  KIT ENGINE
-// ═══════════════════════════════════════════════
 function renderKit(eff) {
   const w   = currentWeather;
   const dur = parseFloat(document.getElementById('durSlider').value);
-  const isRain  = w.precip > 0.3 || w.wcode >= 51;
-  const isLight = w.precip > 0   || w.wcode >= 51;
+  const isRain    = w.precip>0.3 || w.wcode>=51;
+  const heavyRain = w.wcode>=65  || w.precip>2;
 
-  let items  = [];
-  let alerts = [];
-  let accentColor = '#41b87a';
-  if (eff < 12) accentColor = '#4a9eda';
-  if (eff < 5)  accentColor = '#8b78e6';
-  if (eff < 0)  accentColor = '#b060e8';
+  let items=[], alerts=[];
 
-  const bg = accentColor + '18';
-
-  if (eff >= 22) {
-    items.push({ icon:'🎽', cat:'Överkropp', name:'Kortärmad jersey', note:'Mesh för maximal ventilation' });
-    items.push({ icon:'🩳', cat:'Underkropp', name:'Bib shorts', note:'' });
-  } else if (eff >= 17) {
-    items.push({ icon:'🎽', cat:'Överkropp', name:'Jersey + armvärmare', note:'Rulla ned vid uppvärmning' });
-    items.push({ icon:'🩳', cat:'Underkropp', name:'Bib shorts', note:'' });
-    items.push({ icon:'🧤', cat:'Händer', name:'Lätta fingerhandskar', note:'Valfritt vid vindkänsla' });
-  } else if (eff >= 12) {
-    items.push({ icon:'👕', cat:'Överkropp', name:'Långärmad jersey', note:'Alt. kortärmad + baslager' });
-    items.push({ icon:'🩳', cat:'Underkropp', name:'Bib shorts', note:'Alt. lätta knäskydd' });
-    items.push({ icon:'🧤', cat:'Händer', name:'Tunna handskar', note:'' });
-    items.push({ icon:'👂', cat:'Huvud', name:'Öronvärmare', note:'' });
-  } else if (eff >= 7) {
-    items.push({ icon:'🧥', cat:'Överkropp', name:'Termojersey + baslager', note:'Fukttransporterande inre lager' });
-    items.push({ icon:'👖', cat:'Underkropp', name:'Bibtights', note:'' });
-    items.push({ icon:'🧤', cat:'Händer', name:'Vinterhandskar', note:'' });
-    items.push({ icon:'👂', cat:'Huvud', name:'Öronvärmare / pannband', note:'' });
-  } else if (eff >= 2) {
-    items.push({ icon:'🧥', cat:'Överkropp', name:'Vinterjacka + termolinne', note:'Vindtät ytterlager kritiskt' });
-    items.push({ icon:'👖', cat:'Underkropp', name:'Vinter-bibtights', note:'' });
-    items.push({ icon:'🧤', cat:'Händer', name:'Tjocka vinterhandskar', note:'Ev. överdragsvantar' });
-    items.push({ icon:'🎿', cat:'Huvud', name:'Mössa under hjälm', note:'' });
-    items.push({ icon:'🦶', cat:'Fötter', name:'Skoöverdrag / termosockor', note:'' });
+  if (eff>=22) {
+    items.push({icon:'🎽',cat:'Överkropp', name:'Kortärmad jersey',          note:'Mesh för maximal ventilation'});
+    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:''});
+  } else if (eff>=17) {
+    items.push({icon:'🎽',cat:'Överkropp', name:'Jersey + armvärmare',       note:'Rulla ned vid uppvärmning'});
+    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:''});
+    items.push({icon:'🧤',cat:'Händer',    name:'Lätta fingerhandskar',      note:'Valfritt'});
+  } else if (eff>=12) {
+    items.push({icon:'👕',cat:'Överkropp', name:'Långärmad jersey',          note:'Alt. kortärmad + baslager'});
+    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:'Alt. lätta knäskydd'});
+    items.push({icon:'🧤',cat:'Händer',    name:'Tunna handskar',            note:''});
+    items.push({icon:'👂',cat:'Huvud',     name:'Öronvärmare',               note:''});
+  } else if (eff>=7) {
+    items.push({icon:'🧥',cat:'Överkropp', name:'Termojersey + baslager',   note:'Fukttransporterande inre lager'});
+    items.push({icon:'👖',cat:'Underkropp',name:'Bibtights',                 note:''});
+    items.push({icon:'🧤',cat:'Händer',    name:'Vinterhandskar',            note:''});
+    items.push({icon:'👂',cat:'Huvud',     name:'Öronvärmare / pannband',    note:''});
+  } else if (eff>=2) {
+    items.push({icon:'🧥',cat:'Överkropp', name:'Vinterjacka + termolinne', note:'Vindtät ytterlager kritiskt'});
+    items.push({icon:'👖',cat:'Underkropp',name:'Vinter-bibtights',         note:''});
+    items.push({icon:'🧤',cat:'Händer',    name:'Tjocka vinterhandskar',    note:'Ev. överdragsvantar'});
+    items.push({icon:'🎿',cat:'Huvud',     name:'Mössa under hjälm',        note:''});
+    items.push({icon:'🦶',cat:'Fötter',    name:'Skoöverdrag / termosockor',note:''});
   } else {
-    items.push({ icon:'🧥', cat:'Överkropp', name:'Dubbellagring + vindtät jacka', note:'' });
-    items.push({ icon:'👖', cat:'Underkropp', name:'Vinter-bibtights + underställ', note:'' });
-    items.push({ icon:'🧤', cat:'Händer', name:'Extremhandskar / lobstervantar', note:'' });
-    items.push({ icon:'🎿', cat:'Huvud', name:'Balaclava + mössa', note:'' });
-    items.push({ icon:'🦶', cat:'Fötter', name:'Vintersko + skoöverdrag', note:'' });
-    alerts.push({ type:'danger', msg:'Extremt kallt — risk för köldskador. Korta turen om möjligt.' });
+    items.push({icon:'🧥',cat:'Överkropp', name:'Dubbellagring + vindtät jacka',  note:''});
+    items.push({icon:'👖',cat:'Underkropp',name:'Vinter-bibtights + underställ',  note:''});
+    items.push({icon:'🧤',cat:'Händer',    name:'Extremhandskar / lobstervantar', note:''});
+    items.push({icon:'🎿',cat:'Huvud',     name:'Balaclava + mössa',             note:''});
+    items.push({icon:'🦶',cat:'Fötter',    name:'Vintersko + skoöverdrag',       note:''});
+    alerts.push({type:'danger', msg:'Extremt kallt — risk för köldskador. Korta turen om möjligt.'});
   }
 
   if (isRain) {
-    items.push({ icon:'🌧️', cat:'Regnskydd', name:'Vattenavvisande jacka', note:'Syntet — inte bomull' });
-    items.push({ icon:'👓', cat:'Ögon', name:'Glasögon / visir', note:'Skyddar mot stänk och sot' });
-    if (w.wcode >= 65 || w.precip > 2) {
-      items.push({ icon:'🦶', cat:'Fötter', name:'Vattentäta skoöverdrag', note:'' });
-      alerts.push({ type:'warn', msg:'Kraftigt regn — kläder av bomull torkar inte. Allt i syntet.' });
+    items.push({icon:'🌧️',cat:'Regnskydd',name:'Vattenavvisande jacka',   note:'Syntet — inte bomull'});
+    items.push({icon:'👓',cat:'Ögon',     name:'Glasögon / visir',        note:'Skyddar mot stänk'});
+    if (heavyRain) {
+      items.push({icon:'🦶',cat:'Fötter', name:'Vattentäta skoöverdrag', note:''});
+      alerts.push({type:'warn', msg:'Kraftigt regn — allt i syntet. Bomull torkar aldrig.'});
     } else {
-      alerts.push({ type:'warn', msg:'Regnrisk — välj syntetfibrer, undvik bomull.' });
+      alerts.push({type:'warn', msg:'Regnrisk — undvik bomull, välj syntetfibrer.'});
     }
   }
 
-  if (dur > 3) {
-    items.push({ icon:'🎒', cat:'Packa med', name:'Vindväst i bakfickan', note:'Du kyls ned mot slutet av långtur' });
-  }
+  if (dur>3)
+    items.push({icon:'🎒',cat:'Packa med',name:'Vindväst i bakfickan',note:'Du kyls ned mot slutet av långtur'});
 
-  if (w.gusts > 50) {
-    alerts.push({ type:'warn', msg:`Kraftiga byar (${Math.round(w.gusts)} km/h) — var försiktig i exponerat läge.` });
-  }
+  if (w.gusts>50)
+    alerts.push({type:'warn', msg:`Kraftiga byar (${Math.round(w.gusts)} km/h) — var försiktig på exponerade sträckor.`});
 
-  let html = '';
+  let html='';
   alerts.forEach(a => {
-    html += `<div class="alert-row ${a.type === 'warn' ? 'warn' : ''}">${a.msg}</div>`;
+    const isDanger = a.type==='danger';
+    html += `<div class="callout ${isDanger?'danger':''}">${isDanger?MANICULA_DANGER:MANICULA}<p>${a.msg}</p></div>`;
   });
-
   items.forEach(item => {
-    html += `
-      <div class="kit-row">
-        <div class="kit-badge" style="background:${bg}">${item.icon}</div>
-        <div class="kit-body">
-          <div class="kit-cat">${item.cat}</div>
-          <div class="kit-name">${item.name}</div>
-          ${item.note ? `<div class="kit-note">${item.note}</div>` : ''}
-        </div>
+    html += `<div class="kit-row">
+      <div class="kit-icon-wrap">${item.icon}</div>
+      <div>
+        <div class="kit-cat">${item.cat}</div>
+        <div class="kit-name">${item.name}</div>
+        ${item.note?`<div class="kit-note">${item.note}</div>`:''}
       </div>
-    `;
+    </div>`;
   });
-
   document.getElementById('kitArea').innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════
-//  CONTROLS
-// ═══════════════════════════════════════════════
 document.getElementById('durSlider').addEventListener('input', function() {
-  document.getElementById('durLabel').textContent = parseFloat(this.value).toFixed(1) + ' h';
+  document.getElementById('durLabel').textContent = parseFloat(this.value).toFixed(1)+' h';
   if (currentWeather) renderAnalysis();
 });
 
 document.getElementById('speedSlider').addEventListener('input', function() {
-  document.getElementById('speedLabel').textContent = this.value + ' km/h';
+  document.getElementById('speedLabel').textContent = this.value+' km/h';
   if (currentWeather) renderAnalysis();
 });
 
 document.querySelectorAll('.int-btn').forEach(btn => {
   btn.addEventListener('click', function() {
-    document.querySelectorAll('.int-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.int-btn').forEach(b=>b.classList.remove('active'));
     this.classList.add('active');
     intensity = this.dataset.int;
     if (currentWeather) renderAnalysis();
   });
 });
 
-// ═══════════════════════════════════════════════
-//  INIT — pre-load Copenhagen
-// ═══════════════════════════════════════════════
+// Init — Köpenhamn
 (async () => {
-  const lat = 55.6761, lng = 12.5683;
+  const lat=55.6761, lng=12.5683;
   placeMarker(lat, lng);
   document.getElementById('locCoords').textContent = `${lat}° N  ${lng}° E`;
   document.getElementById('mapHint').style.display = 'none';
-  setStatus('loading', 'HÄMTAR…');
-  document.getElementById('weatherArea').innerHTML = '<div class="loading-row"><span class="spinner"></span>Hämtar väder för Köpenhamn…</div>';
-
+  setStatus('loading','Hämtar…','ph-circle-notch');
+  document.getElementById('weatherArea').innerHTML =
+    '<div class="loading-row"><span class="spinner"></span>Köpenhamn…</div>';
   try {
-    const [weather, locName] = await Promise.all([
-      fetchWeather(lat, lng),
-      reverseGeocode(lat, lng)
-    ]);
-    currentWeather = weather;
-    document.getElementById('locName').textContent = locName;
-    renderWeather(weather);
+    const [w, name] = await Promise.all([fetchWeather(lat,lng), reverseGeocode(lat,lng)]);
+    currentWeather = w;
+    document.getElementById('locName').textContent = name;
+    renderWeather(w);
     renderAnalysis();
-    setStatus('ready', 'KLAR');
+    setStatus('ready','Klar','ph-check-circle');
   } catch {
-    document.getElementById('weatherArea').innerHTML = '<div class="alert-row">Kunde inte hämta väderdata.</div>';
-    setStatus('error', 'FEL');
+    document.getElementById('weatherArea').innerHTML =
+      `<div class="callout danger">${MANICULA_DANGER}<p>Kunde inte hämta väderdata.</p></div>`;
+    setStatus('error','Fel','ph-warning');
   }
 })();
 </script>
