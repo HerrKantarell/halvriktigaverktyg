@@ -350,18 +350,13 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 }
 .kit-row:last-child { border-bottom: none; }
 
-.kit-icon-wrap {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--k-radius-sm);
-  background: var(--k-bg);
-  border: var(--k-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.kit-ph {
   font-size: 15px;
+  color: var(--k-mid);
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
+  width: 18px;
+  text-align: center;
 }
 
 .kit-cat {
@@ -408,10 +403,22 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 }
 
 @media (max-width: 720px) {
-  .body-row { flex-direction: column; }
+  .body-row { flex-direction: column; overflow-y: auto; }
+
+  /* Karta — kompakt strip, inte dominant */
+  .map-wrap {
+    order: -1;
+    flex: 0 0 160px;
+    min-height: 160px;
+    max-height: 160px;
+  }
+  .map-hint { font-size: 11px; padding: 5px 12px; bottom: 10px; }
+
+  /* Paneler tar resten */
   .panel-left, .panel-right {
     width: 100%;
-    max-height: 200px;
+    max-height: none;
+    overflow-y: visible;
     border-right: none;
     border-left: none;
     border-bottom: var(--k-border);
@@ -695,42 +702,42 @@ function renderKit(eff) {
   let items=[], alerts=[];
 
   if (eff>=22) {
-    items.push({icon:'🎽',cat:'Överkropp', name:'Kortärmad jersey',          note:'Mesh för maximal ventilation'});
-    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:''});
+    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Kortärmad jersey',           note:'Mesh för maximal ventilation'});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:''});
   } else if (eff>=17) {
-    items.push({icon:'🎽',cat:'Överkropp', name:'Jersey + armvärmare',       note:'Rulla ned vid uppvärmning'});
-    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:''});
-    items.push({icon:'🧤',cat:'Händer',    name:'Lätta fingerhandskar',      note:'Valfritt'});
+    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Jersey + armvärmare',        note:'Rulla ned vid uppvärmning'});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:''});
+    items.push({ph:'ph-hand',        cat:'Händer',    name:'Lätta fingerhandskar',       note:'Valfritt'});
   } else if (eff>=12) {
-    items.push({icon:'👕',cat:'Överkropp', name:'Långärmad jersey',          note:'Alt. kortärmad + baslager'});
-    items.push({icon:'🩳',cat:'Underkropp',name:'Bib shorts',                note:'Alt. lätta knäskydd'});
-    items.push({icon:'🧤',cat:'Händer',    name:'Tunna handskar',            note:''});
-    items.push({icon:'👂',cat:'Huvud',     name:'Öronvärmare',               note:''});
+    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Långärmad jersey',           note:'Alt. kortärmad + baslager'});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:'Alt. lätta knäskydd'});
+    items.push({ph:'ph-hand',        cat:'Händer',    name:'Tunna handskar',             note:''});
+    items.push({ph:'ph-ear',         cat:'Huvud',     name:'Öronvärmare',                note:''});
   } else if (eff>=7) {
-    items.push({icon:'🧥',cat:'Överkropp', name:'Termojersey + baslager',   note:'Fukttransporterande inre lager'});
-    items.push({icon:'👖',cat:'Underkropp',name:'Bibtights',                 note:''});
-    items.push({icon:'🧤',cat:'Händer',    name:'Vinterhandskar',            note:''});
-    items.push({icon:'👂',cat:'Huvud',     name:'Öronvärmare / pannband',    note:''});
+    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Termojersey + baslager',    note:'Fukttransporterande inre lager'});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bibtights',                  note:''});
+    items.push({ph:'ph-hand',        cat:'Händer',    name:'Vinterhandskar',             note:''});
+    items.push({ph:'ph-ear',         cat:'Huvud',     name:'Öronvärmare / pannband',     note:''});
   } else if (eff>=2) {
-    items.push({icon:'🧥',cat:'Överkropp', name:'Vinterjacka + termolinne', note:'Vindtät ytterlager kritiskt'});
-    items.push({icon:'👖',cat:'Underkropp',name:'Vinter-bibtights',         note:''});
-    items.push({icon:'🧤',cat:'Händer',    name:'Tjocka vinterhandskar',    note:'Ev. överdragsvantar'});
-    items.push({icon:'🎿',cat:'Huvud',     name:'Mössa under hjälm',        note:''});
-    items.push({icon:'🦶',cat:'Fötter',    name:'Skoöverdrag / termosockor',note:''});
+    items.push({ph:'ph-coat-hanger', cat:'Överkropp', name:'Vinterjacka + termolinne',  note:'Vindtät ytterlager kritiskt'});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Vinter-bibtights',          note:''});
+    items.push({ph:'ph-hand',        cat:'Händer',    name:'Tjocka vinterhandskar',     note:'Ev. överdragsvantar'});
+    items.push({ph:'ph-beanie',      cat:'Huvud',     name:'Mössa under hjälm',         note:''});
+    items.push({ph:'ph-sneaker',     cat:'Fötter',    name:'Skoöverdrag + termosockor', note:''});
   } else {
-    items.push({icon:'🧥',cat:'Överkropp', name:'Dubbellagring + vindtät jacka',  note:''});
-    items.push({icon:'👖',cat:'Underkropp',name:'Vinter-bibtights + underställ',  note:''});
-    items.push({icon:'🧤',cat:'Händer',    name:'Extremhandskar / lobstervantar', note:''});
-    items.push({icon:'🎿',cat:'Huvud',     name:'Balaclava + mössa',             note:''});
-    items.push({icon:'🦶',cat:'Fötter',    name:'Vintersko + skoöverdrag',       note:''});
+    items.push({ph:'ph-coat-hanger', cat:'Överkropp', name:'Dubbellagring + vindtät jacka',  note:''});
+    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Vinter-bibtights + underställ',  note:''});
+    items.push({ph:'ph-hand',        cat:'Händer',    name:'Extremhandskar / lobstervantar', note:''});
+    items.push({ph:'ph-beanie',      cat:'Huvud',     name:'Balaclava + mössa',              note:''});
+    items.push({ph:'ph-sneaker',     cat:'Fötter',    name:'Vintersko + skoöverdrag',        note:''});
     alerts.push({type:'danger', msg:'Extremt kallt — risk för köldskador. Korta turen om möjligt.'});
   }
 
   if (isRain) {
-    items.push({icon:'🌧️',cat:'Regnskydd',name:'Vattenavvisande jacka',   note:'Syntet — inte bomull'});
-    items.push({icon:'👓',cat:'Ögon',     name:'Glasögon / visir',        note:'Skyddar mot stänk'});
+    items.push({ph:'ph-cloud-rain',  cat:'Regnskydd', name:'Vattenavvisande jacka',   note:'Syntet — inte bomull'});
+    items.push({ph:'ph-eyeglasses',  cat:'Ögon',      name:'Glasögon / visir',        note:'Skyddar mot stänk'});
     if (heavyRain) {
-      items.push({icon:'🦶',cat:'Fötter', name:'Vattentäta skoöverdrag', note:''});
+      items.push({ph:'ph-sneaker',   cat:'Fötter',    name:'Vattentäta skoöverdrag', note:''});
       alerts.push({type:'warn', msg:'Kraftigt regn — allt i syntet. Bomull torkar aldrig.'});
     } else {
       alerts.push({type:'warn', msg:'Regnrisk — undvik bomull, välj syntetfibrer.'});
@@ -738,7 +745,7 @@ function renderKit(eff) {
   }
 
   if (dur>3)
-    items.push({icon:'🎒',cat:'Packa med',name:'Vindväst i bakfickan',note:'Du kyls ned mot slutet av långtur'});
+    items.push({ph:'ph-backpack',    cat:'Packa med', name:'Vindväst i bakfickan', note:'Du kyls ned mot slutet av långtur'});
 
   if (w.gusts>50)
     alerts.push({type:'warn', msg:`Kraftiga byar (${Math.round(w.gusts)} km/h) — var försiktig på exponerade sträckor.`});
@@ -750,7 +757,7 @@ function renderKit(eff) {
   });
   items.forEach(item => {
     html += `<div class="kit-row">
-      <div class="kit-icon-wrap">${item.icon}</div>
+      <i class="ph ${item.ph} kit-ph"></i>
       <div>
         <div class="kit-cat">${item.cat}</div>
         <div class="kit-name">${item.name}</div>
