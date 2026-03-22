@@ -39,7 +39,7 @@
 html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
 
 /* ── Layout ── */
-#app { display: flex; flex-direction: column; height: 100vh; }
+#app { display: flex; flex-direction: column; height: 100vh; min-height: 0; }
 
 /* ── Header ── */
 header {
@@ -108,7 +108,7 @@ header {
 .status-chip.error   { border-color: var(--danger);  color: var(--danger);  }
 
 /* ── Body split ── */
-.body-row { display: flex; flex: 1; overflow: hidden; }
+.body-row { display: flex; flex: 1 1 0; overflow: hidden; min-height: 0; }
 
 /* ── Left panel ── */
 .panel-left {
@@ -246,7 +246,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .int-btn.active { background: rgba(240,160,48,0.12); border-color: var(--accent); color: var(--accent); }
 
 /* ── Map ── */
-#map { flex: 1; z-index: 1; }
+#map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; }
 
 /* Dark tile filter */
 .leaflet-tile-pane { filter: brightness(0.55) saturate(0.5) hue-rotate(5deg); }
@@ -547,7 +547,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
     </div>
 
     <!-- MIDDLE: Map -->
-    <div style="position:relative; flex:1; min-width:0; height:100%;">
+    <div style="position:relative; flex:1 1 0; min-width:0; min-height:0; overflow:hidden;">
       <div id="map"></div>
       <div class="map-hint" id="mapHint">↓ Klicka var som helst på kartan</div>
     </div>
@@ -583,6 +583,10 @@ const map = L.map('map', {
   zoomControl: true,
   attributionControl: true
 });
+
+// Safari fix: force Leaflet to recalculate size after layout settles
+setTimeout(() => map.invalidateSize(), 100);
+setTimeout(() => map.invalidateSize(), 400);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
