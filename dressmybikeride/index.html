@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kit Advisor — Cykelkläder efter väder</title>
-<meta name="description" content="Välj startpunkt på kartan, hämta aktuellt väder och få klädrekommendationer för din cykeltur.">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
@@ -20,22 +18,19 @@
   --k-mid:         #666662;
   --k-faint:       #E2E2DF;
   --k-orange:      #D96B1F;
-  --k-orange-t:    rgba(217,107,31,0.10);
   --k-orange-tt:   rgba(217,107,31,0.06);
-  --k-orange-pale: #F5DFC0;
-  --k-sans:        -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --k-serif:       'Playfair Display', Georgia, serif;
-  --k-mono:        ui-monospace, 'Courier New', monospace;
-  --k-radius:      10px;
-  --k-radius-sm:   7px;
-  --k-border:      0.5px solid var(--k-faint);
+  --k-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --k-serif: 'Playfair Display', Georgia, serif;
+  --k-mono: ui-monospace, 'SF Mono', 'Courier New', monospace;
+  --k-radius: 10px;
+  --k-radius-sm: 7px;
+  --k-border: 0.5px solid var(--k-faint);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   height: 100%;
-  overflow: hidden;
   background: var(--k-bg);
   color: var(--k-ink);
   font-family: var(--k-sans);
@@ -44,9 +39,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+#app { display: flex; flex-direction: column; height: 100vh; min-height: 0; overflow: hidden; }
 
-/* Header */
+/* ── Header ── */
 header {
   flex-shrink: 0;
   height: 50px;
@@ -54,761 +49,764 @@ header {
   border-bottom: var(--k-border);
   display: flex;
   align-items: center;
-  padding: 0 22px;
-  gap: 16px;
+  padding: 0 18px;
+  gap: 12px;
   z-index: 1001;
 }
 
-.brand {
-  font-family: var(--k-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 18px;
-  color: var(--k-ink);
-  flex-shrink: 0;
-  letter-spacing: -0.01em;
+.brand { font-family: var(--k-serif); font-style: italic; font-size: 18px; color: var(--k-ink); flex-shrink: 0; letter-spacing: -0.01em; white-space: nowrap; }
+.brand .slash { color: var(--k-orange); font-style: normal; }
+.h-rule { width: 1px; height: 16px; background: var(--k-faint); flex-shrink: 0; }
+
+.loc-bar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.loc-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--k-ink); }
+.loc-coords { font-family: var(--k-mono); font-size: 10px; color: var(--k-mid); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Header toggles ── */
+.h-toggles { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.tog-grp { display: flex; border: var(--k-border); border-radius: var(--k-radius-sm); overflow: hidden; background: var(--k-bg); }
+.tog-grp button {
+  border: none; background: transparent; color: var(--k-mid);
+  font-family: var(--k-mono); font-size: 10px; letter-spacing: 0.04em;
+  padding: 4px 8px; cursor: pointer; transition: all 0.12s; line-height: 1;
 }
+.tog-grp button:not(:last-child) { border-right: var(--k-border); }
+.tog-grp button.active { background: var(--k-ink); color: var(--k-white); }
+.tog-grp button:not(.active):hover { background: var(--k-faint); color: var(--k-ink); }
 
-.brand-rule { width: 1px; height: 16px; background: var(--k-faint); flex-shrink: 0; }
-
-.location-bar {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-
-.location-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--k-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.location-coords {
-  font-family: var(--k-mono);
-  font-size: 10px;
-  color: var(--k-mid);
-  white-space: nowrap;
-}
-
+/* ── Status ── */
 .status-pill {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--k-mono);
-  font-size: 10px;
-  letter-spacing: 0.07em;
-  padding: 4px 11px;
-  border-radius: 100px;
-  border: var(--k-border);
-  color: var(--k-mid);
-  background: var(--k-bg);
-  transition: all 0.2s;
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--k-mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 4px 10px; border-radius: 100px; border: var(--k-border);
+  color: var(--k-mid); background: var(--k-bg); transition: all 0.2s; white-space: nowrap;
 }
-
 .status-pill.loading { border-color: var(--k-orange); color: var(--k-orange); background: var(--k-orange-tt); }
 .status-pill.ready   { border-color: #5a9e6f; color: #3d7a52; background: rgba(90,158,111,0.06); }
 .status-pill.error   { border-color: #c05050; color: #a03838; background: rgba(192,80,80,0.06); }
 
-/* Body */
-.body-row { display: flex; flex: 1 1 0; overflow: hidden; min-height: 0; }
-
-/* Panels */
-.panel {
+/* ── Mobile city banner ── */
+.mob-loc {
+  display: none;
   background: var(--k-white);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--k-faint) transparent;
+  border-bottom: var(--k-border);
+  padding: 9px 16px;
+  font-size: 13px; font-weight: 500; color: var(--k-ink);
+  align-items: center; gap: 7px; flex-shrink: 0;
 }
 
+/* ── Body ── */
+.body-row { display: flex; flex: 1 1 0; overflow: hidden; min-height: 0; }
+
+/* ── Panels ── */
+.panel {
+  background: var(--k-white);
+  display: flex; flex-direction: column;
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--k-faint) transparent;
+}
 .panel::-webkit-scrollbar { width: 3px; }
 .panel::-webkit-scrollbar-thumb { background: var(--k-faint); }
 
-.panel-left  { width: 272px; flex-shrink: 0; border-right: var(--k-border); }
-.panel-right { width: 268px; flex-shrink: 0; border-left: var(--k-border); }
+.panel-left  { width: 270px; flex-shrink: 0; border-right: var(--k-border); }
+.panel-right { width: 264px; flex-shrink: 0; border-left: var(--k-border); }
 
-.panel-section { padding: 16px 20px; border-bottom: var(--k-border); }
-.panel-section:last-child { border-bottom: none; }
+.p-sec { padding: 15px 18px; border-bottom: var(--k-border); }
+.p-sec:last-child { border-bottom: none; }
 
-.sec-label {
-  font-family: var(--k-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--k-mid);
-  margin-bottom: 12px;
-}
+.sec-label { font-family: var(--k-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--k-mid); margin-bottom: 11px; }
 
-/* Weather */
-.weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-
-.w-cell {
-  background: var(--k-bg);
-  border: var(--k-border);
-  border-radius: var(--k-radius-sm);
-  padding: 10px 12px;
-}
-
-.w-cell .wl {
-  font-family: var(--k-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--k-mid);
-  margin-bottom: 3px;
-}
-
-.w-cell .wv {
-  font-size: 21px;
-  font-weight: 400;
-  color: var(--k-ink);
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.w-cell .wu { font-size: 11px; color: var(--k-mid); }
-.w-cell.accent-cell { border-color: rgba(217,107,31,0.3); background: var(--k-orange-tt); }
-.w-cell.accent-cell .wv { color: var(--k-orange); }
-
-.weather-desc { margin-top: 9px; font-size: 12px; color: var(--k-mid); }
-
-/* Sliders */
-.slider-block { margin-bottom: 14px; }
-.slider-block:last-child { margin-bottom: 0; }
-
-.slider-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-.slider-hd .sl-name { font-size: 12px; font-weight: 500; color: var(--k-ink); }
-.slider-hd .sl-val  { font-family: var(--k-mono); font-size: 12px; color: var(--k-orange); }
-
-input[type=range] {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 2px;
-  background: var(--k-faint);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--k-orange);
-  border: 2px solid var(--k-white);
-  box-shadow: 0 0 0 1px var(--k-faint);
-  cursor: pointer;
-  transition: transform 0.1s;
-}
-
-input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-
-/* Intensitet */
-.int-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
-
-.int-btn {
-  border: var(--k-border);
-  background: var(--k-bg);
-  color: var(--k-mid);
-  padding: 7px 4px;
-  font-family: var(--k-sans);
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: var(--k-radius-sm);
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s;
-  letter-spacing: -0.1px;
-}
-
-.int-btn:hover { border-color: var(--k-orange); color: var(--k-orange); }
-.int-btn.active { background: var(--k-orange); border-color: var(--k-orange); color: #fff; }
-
-/* Karta */
+/* ── Map ── */
+.map-wrap { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }
 #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; }
-.leaflet-tile-pane { filter: saturate(0.55) brightness(0.98); }
-
-.leaflet-popup-content-wrapper {
-  background: var(--k-white) !important;
-  border: var(--k-border) !important;
-  border-radius: var(--k-radius) !important;
-  color: var(--k-ink);
-  font-family: var(--k-sans);
-  font-size: 13px;
-  box-shadow: 0 4px 20px rgba(17,17,17,0.09) !important;
-}
-.leaflet-popup-tip-container { display: none; }
-.leaflet-popup-content { margin: 10px 14px; }
-
-.leaflet-control-zoom a {
-  background: var(--k-white) !important;
-  color: var(--k-ink) !important;
-  border-color: var(--k-faint) !important;
-}
-.leaflet-control-zoom a:hover { background: var(--k-bg) !important; }
-
-.leaflet-control-attribution {
-  background: rgba(247,247,245,0.88) !important;
-  color: var(--k-mid) !important;
-  font-size: 10px !important;
-}
-.leaflet-control-attribution a { color: var(--k-mid) !important; }
 
 .map-hint {
-  position: absolute;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  background: var(--k-white);
-  border: var(--k-border);
-  border-radius: 100px;
-  padding: 7px 18px;
-  font-size: 12px;
-  color: var(--k-mid);
-  pointer-events: none;
-  white-space: nowrap;
-  box-shadow: 0 2px 10px rgba(17,17,17,0.07);
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 500; background: var(--k-white); border: var(--k-border); border-radius: 100px;
+  padding: 6px 14px; font-size: 12px; color: var(--k-mid);
+  pointer-events: none; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 10px rgba(17,17,17,0.06);
 }
 
-/* Analys */
-.eff-block {
-  background: var(--k-bg);
-  border: var(--k-border);
-  border-radius: var(--k-radius);
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+/* Leaflet overrides */
+.leaflet-popup-content-wrapper { background: var(--k-white); border: var(--k-border); border-radius: var(--k-radius) !important; color: var(--k-ink); font-family: var(--k-sans); font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+.leaflet-popup-tip { background: var(--k-white); }
+.leaflet-popup-content { margin: 10px 14px; }
+.leaflet-control-zoom a { background: var(--k-white) !important; color: var(--k-ink) !important; border-color: var(--k-faint) !important; }
+.leaflet-control-zoom a:hover { background: var(--k-bg) !important; }
+.leaflet-control-attribution { background: rgba(247,247,245,0.8) !important; color: var(--k-mid) !important; font-size: 10px !important; }
+.leaflet-control-attribution a { color: var(--k-mid) !important; }
 
-.eff-label {
-  font-family: var(--k-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--k-mid);
-  margin-bottom: 6px;
-}
+/* ── Weather grid ── */
+.wx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.wx-cell { background: var(--k-bg); border: var(--k-border); border-radius: var(--k-radius-sm); padding: 9px 11px; }
+.wx-cell .wl { font-family: var(--k-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--k-mid); margin-bottom: 3px; }
+.wx-cell .wv { font-family: var(--k-mono); font-size: 19px; color: var(--k-ink); line-height: 1; }
+.wx-cell .wu { font-size: 11px; color: var(--k-mid); }
+.wx-cell.wx-hi { border-color: rgba(217,107,31,0.3); background: var(--k-orange-tt); }
+.wx-cell.wx-hi .wv { color: var(--k-orange); }
+.wx-desc { margin-top: 9px; font-size: 12px; color: var(--k-mid); }
 
-.eff-breakdown {
-  font-family: var(--k-mono);
-  font-size: 10px;
-  color: var(--k-mid);
-  line-height: 1.9;
-}
+/* ── Sliders ── */
+.sl-block { margin-bottom: 13px; }
+.sl-block:last-child { margin-bottom: 0; }
+.sl-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.sl-hd .sl-name { font-size: 12px; font-weight: 500; color: var(--k-ink); }
+.sl-hd .sl-val  { font-family: var(--k-mono); font-size: 12px; color: var(--k-orange); }
 
-.eff-number {
-  font-size: 44px;
-  font-weight: 300;
-  line-height: 1;
-  text-align: right;
-  letter-spacing: -0.03em;
-}
+input[type=range] { -webkit-appearance: none; width: 100%; height: 2px; background: var(--k-faint); border-radius: 1px; outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--k-orange); border: 2px solid var(--k-white); box-shadow: 0 0 0 1px var(--k-faint); cursor: pointer; }
 
-/* Callouts med manicula */
-.callout {
-  background: var(--k-orange-tt);
-  border-left: 2px solid var(--k-orange);
-  border-radius: 0 var(--k-radius) var(--k-radius) 0;
-  padding: 10px 14px 10px 12px;
-  margin-bottom: 8px;
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-}
+/* ── Intensity ── */
+.int-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 7px; }
+.int-btn { border: var(--k-border); background: var(--k-bg); color: var(--k-mid); padding: 7px 4px; font-family: var(--k-sans); font-size: 12px; font-weight: 500; border-radius: var(--k-radius-sm); cursor: pointer; text-align: center; transition: all 0.12s; }
+.int-btn:hover { border-color: var(--k-orange); color: var(--k-orange); }
+.int-btn.active { background: var(--k-orange-tt); border-color: rgba(217,107,31,0.35); color: var(--k-orange); }
 
-.callout.danger {
-  background: rgba(192,80,80,0.05);
-  border-left-color: #c05050;
-}
+/* ── Effective temp ── */
+.eff-card { background: var(--k-bg); border: var(--k-border); border-radius: var(--k-radius); padding: 12px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.eff-label { font-family: var(--k-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--k-mid); margin-bottom: 6px; }
+.eff-breakdown { font-family: var(--k-mono); font-size: 10px; color: var(--k-mid); line-height: 1.9; }
+.eff-number { font-family: var(--k-mono); font-size: 40px; font-weight: 300; line-height: 1; text-align: right; flex-shrink: 0; letter-spacing: -0.03em; }
 
-.callout p {
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--k-ink);
-  margin: 0;
-}
+/* ── Callout ── */
+.callout { background: var(--k-orange-tt); border-left: 2px solid var(--k-orange); border-radius: 0 var(--k-radius) var(--k-radius) 0; padding: 9px 13px 9px 11px; margin-bottom: 8px; display: flex; gap: 10px; align-items: flex-start; }
+.callout.danger { background: rgba(192,80,80,0.05); border-left-color: #c05050; }
+.callout p { font-size: 12px; line-height: 1.55; color: var(--k-ink); margin: 0; }
+.callout.danger p { color: #8a3030; }
 
-.callout.danger p { color: #8a2e2e; }
-
-/* Kit */
-.kit-row {
-  display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: var(--k-border);
-}
+/* ── Kit rows ── */
+.kit-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: var(--k-border); }
 .kit-row:last-child { border-bottom: none; }
-
-.kit-ph {
-  font-size: 15px;
-  color: var(--k-mid);
-  flex-shrink: 0;
-  margin-top: 2px;
-  width: 18px;
-  text-align: center;
-}
-
-.kit-cat {
-  font-family: var(--k-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--k-mid);
-  margin-bottom: 1px;
-}
-
-.kit-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--k-ink);
-  line-height: 1.3;
-  letter-spacing: -0.1px;
-}
-
+.kit-ph { font-size: 15px; color: var(--k-mid); flex-shrink: 0; margin-top: 1px; width: 18px; text-align: center; }
+.kit-cat { font-family: var(--k-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--k-mid); margin-bottom: 2px; }
+.kit-name { font-size: 13px; font-weight: 500; color: var(--k-ink); line-height: 1.3; }
 .kit-note { font-size: 11px; color: var(--k-mid); margin-top: 2px; line-height: 1.4; }
 
-/* Spinner */
+/* ── Forecast chip ── */
+.fc-now    { font-family: var(--k-mono); font-size: 12px; color: var(--k-orange); }
+.fc-future { font-family: var(--k-mono); font-size: 12px; color: var(--k-ink); }
+
+/* ── Loading / empty ── */
+.empty { color: var(--k-mid); font-size: 12px; padding: 8px 0; font-style: italic; }
+.loading-row { display: flex; align-items: center; gap: 7px; color: var(--k-mid); font-size: 12px; padding: 6px 0; }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--k-faint); border-top-color: var(--k-orange); border-radius: 50%; animation: spin 0.65s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid var(--k-faint);
-  border-top-color: var(--k-orange);
-  border-radius: 50%;
-  animation: spin 0.65s linear infinite;
-  vertical-align: middle;
-  margin-right: 6px;
+/* ── Pulse marker ── */
+@keyframes pulse-ring { 0% { transform:scale(0.5); opacity:0.7; } 100% { transform:scale(2.4); opacity:0; } }
+.pulse-marker { position:relative; width:14px; height:14px; }
+.pulse-marker .core { position:absolute; inset:0; border-radius:50%; background:var(--k-orange); border:2px solid var(--k-white); box-shadow:0 1px 4px rgba(217,107,31,0.4); }
+.pulse-marker .ring { position:absolute; inset:0; border-radius:50%; background:var(--k-orange); animation:pulse-ring 2s ease-out infinite; }
+
+/* ── Responsive ── */
+@media (max-width: 820px) {
+  .panel-left  { width: 220px; }
+  .panel-right { width: 210px; }
+  .loc-coords  { display: none; }
 }
 
-.loading-row { display: flex; align-items: center; color: var(--k-mid); font-size: 12px; padding: 6px 0; }
-.empty-state { color: var(--k-mid); font-size: 12px; padding: 8px 0; }
+@media (max-width: 640px) {
+  /* City banner above map on mobile */
+  .mob-loc { display: flex; }
+  .loc-name, .loc-coords, .h-rule { display: none; }
+  .tog-grp button { padding: 4px 6px; font-size: 9px; }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .panel-left  { width: 240px; }
-  .panel-right { width: 230px; }
-}
+  /* Scroll layout */
+  html, body { height: auto; overflow: auto; }
+  #app { height: auto; min-height: 100vh; overflow: visible; }
+  .body-row { flex-direction: column; overflow: visible; height: auto; min-height: 0; }
 
-@media (max-width: 720px) {
-  .body-row { flex-direction: column; overflow-y: auto; }
+  /* Map: fixed pixel height — Leaflet needs a concrete number */
+  .map-wrap { height: 150px; min-height: 150px; flex: none; order: -1; overflow: hidden; position: relative; }
+  #map { position: absolute; top: 0; left: 0; width: 100%; height: 150px; }
 
-  /* Karta — kompakt strip, inte dominant */
-  .map-wrap {
-    order: -1;
-    flex: 0 0 160px;
-    min-height: 160px;
-    max-height: 160px;
-  }
-  .map-hint { font-size: 11px; padding: 5px 12px; bottom: 10px; }
-
-  /* Paneler tar resten */
-  .panel-left, .panel-right {
-    width: 100%;
-    max-height: none;
-    overflow-y: visible;
-    border-right: none;
-    border-left: none;
-    border-bottom: var(--k-border);
-  }
+  /* Panels: full width, natural height */
+  .panel { width: 100% !important; overflow-y: visible; height: auto; border-left: none !important; border-right: none !important; border-bottom: var(--k-border); }
+  .panel-right { border-bottom: none; }
 }
 </style>
 </head>
 <body>
-
 <div id="app">
 
   <header>
-    <div class="brand">Kit Advisor</div>
-    <div class="brand-rule"></div>
-    <div class="location-bar">
-      <i class="ph ph-map-pin" style="font-size:14px;color:var(--k-mid);flex-shrink:0;"></i>
-      <div class="location-name" id="locName">Klicka på kartan för att välja startpunkt</div>
-      <div class="location-coords" id="locCoords"></div>
+    <div class="brand">Kit<span class="slash">/</span>Advisor</div>
+    <div class="h-rule"></div>
+    <div class="loc-bar">
+      <i class="ph ph-map-pin" style="font-size:13px;color:var(--k-mid);flex-shrink:0;"></i>
+      <span class="loc-name" id="locName"></span>
+      <span class="loc-coords" id="locCoords"></span>
     </div>
-    <div class="status-pill" id="statusChip">
-      <i class="ph ph-circle" style="font-size:8px;"></i> Väntar
+    <div class="h-toggles">
+      <div class="tog-grp" id="langTog">
+        <button class="tog active" data-v="sv">SV</button>
+        <button class="tog" data-v="en">EN</button>
+      </div>
+      <div class="tog-grp" id="tempTog">
+        <button class="tog active" data-v="C">°C</button>
+        <button class="tog" data-v="F">°F</button>
+      </div>
+      <div class="tog-grp" id="windTog">
+        <button class="tog active" data-v="kmh">km/h</button>
+        <button class="tog" data-v="ms">m/s</button>
+      </div>
     </div>
+    <div class="status-pill" id="statusChip">—</div>
   </header>
+
+  <!-- City name strip on mobile -->
+  <div class="mob-loc" id="mobLoc">
+    <i class="ph ph-map-pin" style="font-size:14px;color:var(--k-orange);"></i>
+    <span id="mobLocName"></span>
+  </div>
 
   <div class="body-row">
 
-    <!-- Vänster: Väder + parametrar -->
+    <!-- LEFT -->
     <div class="panel panel-left">
-
-      <div class="panel-section">
-        <div class="sec-label">Väder just nu</div>
-        <div id="weatherArea">
-          <div class="empty-state">Välj plats på kartan.</div>
+      <div class="p-sec">
+        <div class="sec-label" id="lblWeather"></div>
+        <div id="wxArea"><div class="empty" id="wxEmpty"></div></div>
+        <div class="sl-block" id="fcBlock" style="margin-top:14px; display:none;">
+          <div class="sl-hd">
+            <span class="sl-name" id="lblForecast"></span>
+            <span id="fcLabel" class="fc-now"></span>
+          </div>
+          <input type="range" id="fcSlider" min="0" max="23" step="1" value="0">
         </div>
       </div>
-
-      <div class="panel-section">
-        <div class="sec-label">Tur</div>
-
-        <div class="slider-block">
-          <div class="slider-hd">
-            <span class="sl-name">Längd</span>
-            <span class="sl-val" id="durLabel">2.0 h</span>
-          </div>
+      <div class="p-sec">
+        <div class="sec-label" id="lblConfig"></div>
+        <div class="sl-block">
+          <div class="sl-hd"><span class="sl-name" id="lblDur"></span><span class="sl-val" id="durLabel">2.0 h</span></div>
           <input type="range" id="durSlider" min="0.5" max="8" step="0.5" value="2">
         </div>
-
-        <div class="slider-block">
-          <div class="slider-hd">
-            <span class="sl-name">Snitthastighet</span>
-            <span class="sl-val" id="speedLabel">28 km/h</span>
-          </div>
+        <div class="sl-block">
+          <div class="sl-hd"><span class="sl-name" id="lblSpeed"></span><span class="sl-val" id="speedLabel">28 km/h</span></div>
           <input type="range" id="speedSlider" min="14" max="44" step="2" value="28">
         </div>
-
-        <div class="slider-block">
-          <div class="slider-hd"><span class="sl-name">Intensitet</span></div>
+        <div class="sl-block">
+          <div class="sl-hd"><span class="sl-name" id="lblIntensity"></span></div>
           <div class="int-grid">
-            <button class="int-btn active" data-int="easy">Lugn</button>
-            <button class="int-btn"        data-int="mod">Tempo</button>
-            <button class="int-btn"        data-int="hard">Hård</button>
+            <button class="int-btn active" data-int="easy" id="intEasy"></button>
+            <button class="int-btn" data-int="mod" id="intMod"></button>
+            <button class="int-btn" data-int="hard" id="intHard"></button>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- Mitten: Karta -->
-    <div style="position:relative; flex:1 1 0; min-width:0; min-height:0; overflow:hidden;">
+    <!-- MAP -->
+    <div class="map-wrap">
       <div id="map"></div>
       <div class="map-hint" id="mapHint">
-        <i class="ph ph-cursor-click" style="font-size:12px;vertical-align:middle;margin-right:4px;"></i>Klicka för att välja startpunkt
+        <i class="ph ph-map-pin" style="color:var(--k-orange);font-size:13px;"></i>
+        <span id="mapHintText"></span>
       </div>
     </div>
 
-    <!-- Höger: Analys + utrustning -->
+    <!-- RIGHT -->
     <div class="panel panel-right">
-
-      <div class="panel-section">
-        <div class="sec-label">Analys</div>
-        <div id="analysisArea">
-          <div class="empty-state">Välj plats för beräkning.</div>
-        </div>
+      <div class="p-sec">
+        <div class="sec-label" id="lblAnalysis"></div>
+        <div id="analysisArea"><div class="empty" id="analysisEmpty"></div></div>
       </div>
-
-      <div class="panel-section" style="flex:1;">
-        <div class="sec-label">Utrustning</div>
-        <div id="kitArea">
-          <div class="empty-state">Välj plats för rekommendationer.</div>
-        </div>
+      <div class="p-sec" style="flex:1;">
+        <div class="sec-label" id="lblKit"></div>
+        <div id="kitArea"><div class="empty" id="kitEmpty"></div></div>
       </div>
-
     </div>
+
   </div>
 </div>
 
 <script>
-// MAP
-const map = L.map('map', { center:[55.676,12.568], zoom:9 });
+// ─── STATE ────────────────────────────────────────────────
+const S = {
+  lang:'sv', tempUnit:'C', windUnit:'kmh', intensity:'easy',
+  fcOffset:0, lat:null, lng:null, locName:'',
+  wx:null, wxLive:null, hourly:null,
+};
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18
+// ─── i18n ─────────────────────────────────────────────────
+const T = {
+  sv: {
+    title:'Kit/Advisor — Cykelkläder efter väder',
+    waiting:'Klicka på kartan för att välja plats',
+    mapHint:'Klicka var som helst på kartan',
+    status:{ waiting:'Väntar', loading:'Hämtar…', ready:'Klar', error:'Fel' },
+    weather:'Väder', forecast:'Prognos', now:'Nu',
+    inHours: h=>`+${h}h`,
+    config:'Turkonfiguration', duration:'Längd', speed:'Snitthastighet', intensity:'Intensitet',
+    easy:'Lugn', mod:'Tempo', hard:'Hård',
+    analysis:'Analys', kit:'Utrustning',
+    effTemp:'Upplevd temp', windChill:'Vindkyla', effort:'Ansträngning',
+    durPen:'Turlängd', humPen:'Hög fukt',
+    selectLoc:'Välj plats för beräkning.', selectLocWx:'Välj plats på kartan.',
+    wDesc:{0:'Klart',1:'Klart',2:'Delvis molnigt',3:'Mulet',45:'Dimma',48:'Rimfrost',
+      51:'Lätt duggregn',53:'Duggregn',55:'Kraftigt duggregn',
+      61:'Lätt regn',63:'Regn',65:'Kraftigt regn',
+      71:'Lätt snö',73:'Snö',75:'Kraftigt snöfall',77:'Snöhagel',
+      80:'Regnskurar',81:'Regnskurar',82:'Kraftiga skurar',95:'Åska',99:'Kraftig åska'},
+    upper:'Överkropp', lower:'Underkropp', hands:'Händer', head:'Huvud',
+    feet:'Fötter', rainprot:'Regnskydd', eyes:'Ögon', pack:'Packa med',
+    wxCells:{ temp:'Temp', wind:'Vind', humidity:'Fukt', gusts:'Byar' },
+    kit:{
+      jersey_short:   ['Kortärmad jersey',         'Mesh för maximal ventilation'],
+      jersey_arm:     ['Jersey + armvärmare',       'Rulla ned vid uppvärmning'],
+      jersey_long:    ['Långärmad jersey',           'Alt. kortärmad + baslager'],
+      jersey_thermo:  ['Termojersey + baslager',    'Fukttransporterande inre lager'],
+      jacket_winter:  ['Vinterjacka + termolinne',  'Vindtät ytterlager kritiskt'],
+      jacket_double:  ['Dubbellagring + vindtät jacka',''],
+      bib_shorts:     ['Bib shorts',                ''],
+      bib_shorts_k:   ['Bib shorts',                'Alt. lätta knäskydd'],
+      bibtights:      ['Bibtights',                 ''],
+      bibtights_w:    ['Vinter-bibtights',          ''],
+      bibtights_dbl:  ['Vinter-bibtights + underställ',''],
+      gloves_light:   ['Lätta fingerhandskar',      'Valfritt'],
+      gloves_thin:    ['Tunna handskar',             ''],
+      gloves_winter:  ['Vinterhandskar',             ''],
+      gloves_heavy:   ['Tjocka vinterhandskar',     'Ev. överdragsvantar'],
+      gloves_extreme: ['Extremhandskar',            'Lobster eller fältvantar'],
+      ear_warmer:     ['Öronvärmare',               ''],
+      ear_band:       ['Öronvärmare / pannband',    ''],
+      hat:            ['Mössa under hjälm',         ''],
+      balaclava:      ['Balaclava + mössa',         ''],
+      shoe_cover:     ['Skoöverdrag + termosockor', ''],
+      shoe_winter:    ['Vintersko + skoöverdrag',   ''],
+      rain_jacket:    ['Vattenavvisande jacka',      'Syntet — inte bomull'],
+      waterproof:     ['Vattentäta skoöverdrag',    ''],
+      glasses:        ['Glasögon / visir',           'Skyddar mot stänk'],
+      vest:           ['Vindväst i bakfickan',       'Du kyls ned mot slutet'],
+    },
+    alerts:{
+      extreme:   'Extremt kallt — risk för köldskador. Korta turen om möjligt.',
+      rain:      'Regnrisk — undvik bomull, välj syntetfibrer.',
+      heavyRain: 'Kraftigt regn — allt i syntet. Bomull torkar aldrig.',
+      gusts:     g=>`Kraftiga byar (${g} km/h) — var försiktig på exponerade sträckor.`,
+      longRide:  'Du kyls ned mot slutet. Ha ett extra lager i bakfickan.',
+      startCold: 'Klä för hur det känns 15 min in på turen, inte vid starten.',
+    },
+  },
+  en: {
+    title:'Kit Advisor — Cycling Clothing by Weather',
+    waiting:'Tap the map to choose your location',
+    mapHint:'Click anywhere on the map',
+    status:{ waiting:'Waiting', loading:'Loading…', ready:'Ready', error:'Error' },
+    weather:'Weather', forecast:'Forecast', now:'Now',
+    inHours: h=>`+${h}h`,
+    config:'Ride Setup', duration:'Duration', speed:'Average speed', intensity:'Intensity',
+    easy:'Easy', mod:'Tempo', hard:'Hard',
+    analysis:'Analysis', kit:'Kit',
+    effTemp:'Feels like', windChill:'Wind chill', effort:'Effort',
+    durPen:'Ride length', humPen:'High humidity',
+    selectLoc:'Choose a location to calculate.', selectLocWx:'Click the map to choose a location.',
+    wDesc:{0:'Clear',1:'Clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Freezing fog',
+      51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+      61:'Light rain',63:'Rain',65:'Heavy rain',
+      71:'Light snow',73:'Snow',75:'Heavy snowfall',77:'Snow grains',
+      80:'Showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',99:'Severe thunderstorm'},
+    upper:'Upper body', lower:'Lower body', hands:'Hands', head:'Head',
+    feet:'Feet', rainprot:'Rain', eyes:'Eyes', pack:'Carry',
+    wxCells:{ temp:'Temp', wind:'Wind', humidity:'Humidity', gusts:'Gusts' },
+    kit:{
+      jersey_short:   ['Short sleeve jersey',         'Mesh fabric for ventilation'],
+      jersey_arm:     ['Jersey + arm warmers',        'Remove as you warm up'],
+      jersey_long:    ['Long sleeve jersey',           'Or short sleeve + base layer'],
+      jersey_thermo:  ['Thermal jersey + base layer', 'Moisture-wicking inner layer'],
+      jacket_winter:  ['Winter jacket + thermal top', 'Windproof outer layer critical'],
+      jacket_double:  ['Double layer + windproof jacket',''],
+      bib_shorts:     ['Bib shorts',                  ''],
+      bib_shorts_k:   ['Bib shorts',                  'Or light knee warmers'],
+      bibtights:      ['Bib tights',                  ''],
+      bibtights_w:    ['Winter bib tights',           ''],
+      bibtights_dbl:  ['Winter bib tights + base layer',''],
+      gloves_light:   ['Light finger gloves',         'Optional if windy'],
+      gloves_thin:    ['Thin gloves',                 ''],
+      gloves_winter:  ['Winter gloves',               ''],
+      gloves_heavy:   ['Heavy winter gloves',         'Overmitts if very cold'],
+      gloves_extreme: ['Extreme gloves',              'Lobster or expedition mitts'],
+      ear_warmer:     ['Ear warmers',                 ''],
+      ear_band:       ['Ear warmers / headband',      ''],
+      hat:            ['Cap under helmet',            ''],
+      balaclava:      ['Balaclava + cap',             ''],
+      shoe_cover:     ['Shoe covers + thermal socks', ''],
+      shoe_winter:    ['Winter shoes + covers',       ''],
+      rain_jacket:    ['Water-resistant jacket',      'Synthetic — not cotton'],
+      waterproof:     ['Waterproof shoe covers',      ''],
+      glasses:        ['Glasses / visor',             'Protects from spray'],
+      vest:           ['Wind vest in back pocket',    'You will cool down at the end'],
+    },
+    alerts:{
+      extreme:   'Extremely cold — risk of frostbite. Cut the ride short if needed.',
+      rain:      'Rain risk — avoid cotton, choose synthetic fabrics.',
+      heavyRain: 'Heavy rain — go all synthetic. Cotton never dries.',
+      gusts:     g=>`Strong gusts (${g} km/h) — be careful on exposed stretches.`,
+      longRide:  'You will cool down toward the end. Keep a spare layer in your pocket.',
+      startCold: 'Dress for how it feels 15 min in, not at the very start.',
+    },
+  },
+};
+
+const t     = key => T[S.lang][key] ?? key;
+const tkit  = key => T[S.lang].kit[key] ?? ['?',''];
+const talert = (key,...args) => { const v = T[S.lang].alerts[key]; return typeof v==='function'?v(...args):v; };
+
+// ─── UNIT HELPERS ─────────────────────────────────────────
+function fmtTemp(c, dec=1) {
+  if (S.tempUnit==='F') return ((c*9/5)+32).toFixed(dec)+' °F';
+  return c.toFixed(dec)+' °C';
+}
+function fmtEffTemp(c) {
+  const v = S.tempUnit==='F' ? Math.round((c*9/5)+32) : Math.round(c);
+  return (v>0?'+':'')+v+'°';
+}
+function fmtWind(kmh) {
+  if (S.windUnit==='ms') return (kmh/3.6).toFixed(1)+' m/s';
+  return Math.round(kmh)+' km/h';
+}
+function speedKmh() { return parseInt(document.getElementById('speedSlider').value); }
+
+// ─── MAP ─────────────────────────────────────────────────
+const map = L.map('map',{center:[55.676,12.568],zoom:9,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/">CARTO</a>',maxZoom:19
 }).addTo(map);
+setTimeout(()=>map.invalidateSize(),150);
+setTimeout(()=>map.invalidateSize(),500);
 
-setTimeout(() => map.invalidateSize(), 100);
-setTimeout(() => map.invalidateSize(), 400);
-
-const markerIcon = L.divIcon({
-  html: `<svg viewBox="0 0 24 36" width="24" height="36" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C7.58 2 4 5.58 4 10c0 7 8 24 8 24s8-17 8-24c0-4.42-3.58-8-8-8z" fill="#D96B1F"/>
-    <circle cx="12" cy="10" r="3.5" fill="white"/>
-  </svg>`,
-  iconSize:[24,36], iconAnchor:[12,36], className:''
+const pulseIcon = L.divIcon({
+  html:'<div class="pulse-marker"><div class="ring"></div><div class="core"></div></div>',
+  className:'',iconSize:[14,14],iconAnchor:[7,7]
 });
+let marker=null;
 
-let marker = null, currentWeather = null, intensity = 'easy';
+map.on('click', e => selectLocation(e.latlng.lat, e.latlng.lng));
 
-// Manicula SVG
-const MANICULA = `<svg width="22" height="14" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:2px">
-  <path d="M5 28 L36 28" stroke="#D96B1F" stroke-width="3" stroke-linecap="round"/>
-  <path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#D96B1F"/>
-</svg>`;
-
-const MANICULA_DANGER = `<svg width="22" height="14" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:2px">
-  <path d="M5 28 L36 28" stroke="#c05050" stroke-width="3" stroke-linecap="round"/>
-  <path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#c05050"/>
-</svg>`;
-
-function setStatus(cls, text, icon) {
-  const el = document.getElementById('statusChip');
-  el.className = 'status-pill ' + cls;
-  el.innerHTML = `<i class="ph ${icon}" style="font-size:8px;"></i> ${text}`;
+function placeMarker(lat,lng) {
+  if(marker) map.removeLayer(marker);
+  marker = L.marker([lat,lng],{icon:pulseIcon}).addTo(map);
 }
 
-function placeMarker(lat, lng) {
-  if (marker) map.removeLayer(marker);
-  marker = L.marker([lat,lng], {icon:markerIcon}).addTo(map);
-}
-
-map.on('click', async (e) => {
-  const {lat, lng} = e.latlng;
-  placeMarker(lat, lng);
-  document.getElementById('mapHint').style.display = 'none';
-  document.getElementById('locCoords').textContent = `${lat.toFixed(4)}° N  ${lng.toFixed(4)}° E`;
-  setStatus('loading','Hämtar…','ph-circle-notch');
-  document.getElementById('weatherArea').innerHTML =
-    '<div class="loading-row"><span class="spinner"></span>Hämtar väderdata…</div>';
-  document.getElementById('analysisArea').innerHTML =
-    '<div class="empty-state">Väntar på väder…</div>';
-  document.getElementById('kitArea').innerHTML =
-    '<div class="empty-state">Väntar på väder…</div>';
+// ─── SELECT LOCATION ─────────────────────────────────────
+async function selectLocation(lat, lng) {
+  S.lat=lat; S.lng=lng; S.fcOffset=0;
+  document.getElementById('fcSlider').value=0;
+  placeMarker(lat,lng);
+  document.getElementById('mapHint').style.display='none';
+  document.getElementById('locCoords').textContent=`${lat.toFixed(4)}° N  ${lng.toFixed(4)}° E`;
+  setStatus('loading');
+  document.getElementById('wxArea').innerHTML='<div class="loading-row"><span class="spinner"></span></div>';
+  document.getElementById('analysisArea').innerHTML='<div class="empty"></div>';
+  document.getElementById('kitArea').innerHTML='<div class="empty"></div>';
   try {
-    const [w, name] = await Promise.all([fetchWeather(lat,lng), reverseGeocode(lat,lng)]);
-    currentWeather = w;
-    document.getElementById('locName').textContent = name;
-    renderWeather(w);
-    renderAnalysis();
-    setStatus('ready','Klar','ph-check-circle');
-  } catch(err) {
-    console.error(err);
-    document.getElementById('weatherArea').innerHTML =
-      `<div class="callout danger">${MANICULA_DANGER}<p>Kunde inte hämta väderdata.</p></div>`;
-    setStatus('error','Fel','ph-warning');
+    const [weather,name] = await Promise.all([fetchWeather(lat,lng), reverseGeocode(lat,lng)]);
+    S.wxLive=weather; S.wx=weather; S.locName=name;
+    setLocName(name);
+    renderAll();
+    setStatus('ready');
+    document.getElementById('fcBlock').style.display='block';
+    updateFcLabel();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('wxArea').innerHTML=`<div class="callout danger">${MANICULA_D}<p>Nätverksfel — kontrollera anslutningen.</p></div>`;
+    setStatus('error');
   }
-});
-
-async function fetchWeather(lat, lng) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,apparent_temperature,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m,weather_code&wind_speed_unit=kmh&timezone=auto`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('API error');
-  const d = await res.json();
-  const c = d.current;
-  return {
-    temp:c.temperature_2m, apparent:c.apparent_temperature,
-    wind:c.wind_speed_10m, gusts:c.wind_gusts_10m,
-    precip:c.precipitation, humidity:c.relative_humidity_2m, wcode:c.weather_code
-  };
 }
 
+function setLocName(name) {
+  document.getElementById('locName').textContent=name;
+  document.getElementById('mobLocName').textContent=name;
+}
+
+// ─── STATUS ───────────────────────────────────────────────
+function setStatus(state) {
+  const el=document.getElementById('statusChip');
+  el.className='status-pill '+state;
+  el.textContent=t('status')[state]||state;
+}
+
+// ─── WEATHER FETCH ────────────────────────────────────────
+async function fetchWeather(lat, lng) {
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&current=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m,weather_code&hourly=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m,weather_code&wind_speed_unit=kmh&timezone=auto&forecast_days=2`;
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('API');
+  const d=await r.json();
+  const c=d.current;
+  const nowIdx=d.hourly.time.findIndex(t=>t===c.time);
+  S.hourly={
+    times:d.hourly.time, temp:d.hourly.temperature_2m,
+    wind:d.hourly.wind_speed_10m, gusts:d.hourly.wind_gusts_10m,
+    precip:d.hourly.precipitation, humidity:d.hourly.relative_humidity_2m,
+    wcode:d.hourly.weather_code, nowIdx:nowIdx>=0?nowIdx:0,
+  };
+  return { temp:c.temperature_2m, wind:c.wind_speed_10m, gusts:c.wind_gusts_10m, precip:c.precipitation, humidity:c.relative_humidity_2m, wcode:c.weather_code };
+}
+
+function wxAtOffset(off) {
+  if(!S.hourly||off===0) return S.wxLive;
+  const idx=Math.min(S.hourly.nowIdx+off, S.hourly.temp.length-1);
+  return { temp:S.hourly.temp[idx], wind:S.hourly.wind[idx], gusts:S.hourly.gusts[idx], precip:S.hourly.precip[idx], humidity:S.hourly.humidity[idx], wcode:S.hourly.wcode[idx] };
+}
+
+// ─── REVERSE GEOCODE ──────────────────────────────────────
 async function reverseGeocode(lat, lng) {
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      {headers:{'Accept-Language':'sv'}}
-    );
-    const d = await res.json();
-    const a = d.address || {};
-    const city = a.city||a.town||a.village||a.municipality||a.county||'Okänd plats';
-    return a.country ? `${city}, ${a.country}` : city;
-  } catch { return 'Plats vald'; }
+    const accept = S.lang==='en' ? 'en' : 'sv,da,nb';
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,{headers:{'Accept-Language':accept}});
+    const d=await r.json();
+    const a=d.address||{};
+    const city=a.city||a.town||a.village||a.municipality||a.county||(S.lang==='sv'?'Okänd plats':'Unknown location');
+    return a.country?`${city}, ${a.country}`:city;
+  } catch { return S.lang==='sv'?'Plats vald':'Location selected'; }
 }
 
+// ─── WEATHER DESCRIPTION ─────────────────────────────────
 function wDesc(code) {
-  if (code===0)  return '☀️ Klart';
-  if (code<=3)   return '⛅ Delvis molnigt';
-  if (code<=48)  return '🌫️ Dimma';
-  if (code<=55)  return '🌦️ Duggregn';
-  if (code<=67)  return '🌧️ Regn';
-  if (code<=77)  return '❄️ Snö';
-  if (code<=82)  return '🌦️ Regnskurar';
-  return '⛈️ Åska';
+  const m=t('wDesc');
+  const keys=Object.keys(m).map(Number).sort((a,b)=>a-b);
+  for(let i=keys.length-1;i>=0;i--) if(code>=keys[i]) return m[keys[i]];
+  return m[0];
+}
+function wIcon(c) {
+  if(c<=1)  return '☀';
+  if(c<=3)  return '⛅';
+  if(c<=48) return '〇';
+  if(c<=67) return '◉';
+  if(c<=77) return '❄';
+  if(c<=82) return '◉';
+  return '⚡';
 }
 
+// ─── RENDER WEATHER ───────────────────────────────────────
 function renderWeather(w) {
-  document.getElementById('weatherArea').innerHTML = `
-    <div class="weather-grid">
-      <div class="w-cell accent-cell">
-        <div class="wl">Temp</div>
-        <div class="wv">${w.temp.toFixed(1)}<span class="wu"> °C</span></div>
+  const cx=t('wxCells');
+  document.getElementById('wxArea').innerHTML=`
+    <div class="wx-grid">
+      <div class="wx-cell wx-hi">
+        <div class="wl">${cx.temp}</div>
+        <div class="wv">${fmtTemp(w.temp)}</div>
       </div>
-      <div class="w-cell">
-        <div class="wl">Vind</div>
-        <div class="wv">${Math.round(w.wind)}<span class="wu"> km/h</span></div>
+      <div class="wx-cell">
+        <div class="wl">${cx.wind}</div>
+        <div class="wv">${fmtWind(w.wind)}</div>
       </div>
-      <div class="w-cell">
-        <div class="wl">Fuktighet</div>
+      <div class="wx-cell">
+        <div class="wl">${cx.humidity}</div>
         <div class="wv">${Math.round(w.humidity)}<span class="wu"> %</span></div>
       </div>
-      <div class="w-cell">
-        <div class="wl">Byar</div>
-        <div class="wv">${Math.round(w.gusts)}<span class="wu"> km/h</span></div>
+      <div class="wx-cell">
+        <div class="wl">${cx.gusts}</div>
+        <div class="wv">${fmtWind(w.gusts)}</div>
       </div>
     </div>
-    <div class="weather-desc">${wDesc(w.wcode)}${w.precip>0 ? ` &nbsp;·&nbsp; ${w.precip.toFixed(1)} mm` : ''}</div>
+    <div class="wx-desc">${wIcon(w.wcode)} ${wDesc(w.wcode)}${w.precip>0?` · ${w.precip.toFixed(1)} mm`:''}</div>
   `;
 }
 
+// ─── FORMULA ─────────────────────────────────────────────
 function windChill(T, V) {
-  if (T>=10 || V<4.8) return T;
-  return 13.12 + 0.6215*T - 11.37*Math.pow(V,0.16) + 0.3965*T*Math.pow(V,0.16);
+  if(T>=10||V<4.8) return T;
+  return 13.12+0.6215*T-11.37*Math.pow(V,0.16)+0.3965*T*Math.pow(V,0.16);
+}
+function calcEff(w) {
+  const speed=speedKmh(), dur=parseFloat(document.getElementById('durSlider').value);
+  const wc=windChill(w.temp, w.wind+speed);
+  const effort={easy:4,mod:7,hard:11}[S.intensity];
+  const durP=dur>3?-2:dur>1.5?-1:0;
+  const humP=w.humidity>85?-2:0;
+  return { eff:Math.round((wc+effort+durP+humP)*10)/10, wc:Math.round(wc*10)/10, effort,durP,humP };
 }
 
-function calcEffective(w) {
-  const speed = parseInt(document.getElementById('speedSlider').value);
-  const dur   = parseFloat(document.getElementById('durSlider').value);
-  const effV  = w.wind + speed;
-  const wc    = windChill(w.temp, effV);
-  const effort = {easy:4, mod:7, hard:11}[intensity];
-  const durP  = dur>3 ? -2 : dur>1.5 ? -1 : 0;
-  const humP  = w.humidity>85 ? -2 : 0;
-  return {
-    eff: Math.round((wc+effort+durP+humP)*10)/10,
-    wc:  Math.round(wc*10)/10,
-    effort, durP, humP
-  };
-}
-
+// ─── RENDER ANALYSIS ─────────────────────────────────────
 function renderAnalysis() {
-  if (!currentWeather) return;
-  const {eff, wc, effort, durP, humP} = calcEffective(currentWeather);
+  if(!S.wx) return;
+  const {eff,wc,effort,durP,humP}=calcEff(S.wx);
+  let color='#3d7a52';
+  if(eff<13) color='#2e6ea6';
+  if(eff<6)  color='#5a48b4';
+  if(eff<0)  color='#8040b0';
+  if(eff>24) color='#b83c3c';
 
-  let color = '#3d7a52';
-  if (eff<13) color='#2e6ea6';
-  if (eff<6)  color='#5a48b4';
-  if (eff<0)  color='#8040b0';
-  if (eff>24) color='#b83c3c';
+  let bd=`${t('windChill')}: ${fmtTemp(wc)}<br>${t('effort')}: +${effort}°`;
+  if(durP<0) bd+=`<br>${t('durPen')}: ${durP}°`;
+  if(humP<0) bd+=`<br>${t('humPen')}: ${humP}°`;
 
-  let bd = `Vindkyla: ${wc}°C<br>Ansträngning: +${effort}°C`;
-  if (durP<0) bd += `<br>Turlängd: ${durP}°C`;
-  if (humP<0) bd += `<br>Hög fukt: ${humP}°C`;
-
-  document.getElementById('analysisArea').innerHTML = `
-    <div class="eff-block">
+  document.getElementById('analysisArea').innerHTML=`
+    <div class="eff-card">
       <div>
-        <div class="eff-label">Upplevd temp</div>
+        <div class="eff-label">${t('effTemp')}</div>
         <div class="eff-breakdown">${bd}</div>
       </div>
-      <div class="eff-number" style="color:${color}">${eff>0?'+':''}${eff}°</div>
+      <div class="eff-number" style="color:${color}">${fmtEffTemp(eff)}</div>
     </div>
   `;
   renderKit(eff);
 }
 
+// ─── MANICULAS ────────────────────────────────────────────
+const MANICULA=`<svg width="20" height="12" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M5 28 L36 28" stroke="#D96B1F" stroke-width="3" stroke-linecap="round"/><path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#D96B1F"/></svg>`;
+const MANICULA_D=`<svg width="20" height="12" viewBox="0 0 100 56" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M5 28 L36 28" stroke="#c05050" stroke-width="3" stroke-linecap="round"/><path d="M36 28 Q42 28 44 23 L60 7 Q63 3 68 5 Q74 8 71 13 L58 26 L72 26 Q78 26 78 31 Q78 37 72 37 L66 37 Q71 37 71 42 Q71 47 66 47 L60 47 Q63 47 63 51 Q63 55 58 55 L36 55 Q27 55 23 48 L19 41 L19 35 L10 35 Q4 35 4 29 Q4 23 10 23" fill="#c05050"/></svg>`;
+
+// ─── RENDER KIT ───────────────────────────────────────────
+function krow(ph, catKey, kitKey) {
+  const [name,note]=tkit(kitKey);
+  return `<div class="kit-row"><i class="ph ${ph} kit-ph"></i><div><div class="kit-cat">${t(catKey)}</div><div class="kit-name">${name}</div>${note?`<div class="kit-note">${note}</div>`:''}</div></div>`;
+}
+
 function renderKit(eff) {
-  const w   = currentWeather;
-  const dur = parseFloat(document.getElementById('durSlider').value);
-  const isRain    = w.precip>0.3 || w.wcode>=51;
-  const heavyRain = w.wcode>=65  || w.precip>2;
+  const w=S.wx, dur=parseFloat(document.getElementById('durSlider').value);
+  const isRain=w.precip>0.3||w.wcode>=51;
+  const heavyRain=w.wcode>=65||w.precip>2;
+  let rows='', callouts='';
 
-  let items=[], alerts=[];
-
-  if (eff>=22) {
-    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Kortärmad jersey',           note:'Mesh för maximal ventilation'});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:''});
-  } else if (eff>=17) {
-    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Jersey + armvärmare',        note:'Rulla ned vid uppvärmning'});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:''});
-    items.push({ph:'ph-hand',        cat:'Händer',    name:'Lätta fingerhandskar',       note:'Valfritt'});
-  } else if (eff>=12) {
-    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Långärmad jersey',           note:'Alt. kortärmad + baslager'});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bib shorts',                 note:'Alt. lätta knäskydd'});
-    items.push({ph:'ph-hand',        cat:'Händer',    name:'Tunna handskar',             note:''});
-    items.push({ph:'ph-ear',         cat:'Huvud',     name:'Öronvärmare',                note:''});
-  } else if (eff>=7) {
-    items.push({ph:'ph-t-shirt',     cat:'Överkropp', name:'Termojersey + baslager',    note:'Fukttransporterande inre lager'});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Bibtights',                  note:''});
-    items.push({ph:'ph-hand',        cat:'Händer',    name:'Vinterhandskar',             note:''});
-    items.push({ph:'ph-ear',         cat:'Huvud',     name:'Öronvärmare / pannband',     note:''});
-  } else if (eff>=2) {
-    items.push({ph:'ph-coat-hanger', cat:'Överkropp', name:'Vinterjacka + termolinne',  note:'Vindtät ytterlager kritiskt'});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Vinter-bibtights',          note:''});
-    items.push({ph:'ph-hand',        cat:'Händer',    name:'Tjocka vinterhandskar',     note:'Ev. överdragsvantar'});
-    items.push({ph:'ph-beanie',      cat:'Huvud',     name:'Mössa under hjälm',         note:''});
-    items.push({ph:'ph-sneaker',     cat:'Fötter',    name:'Skoöverdrag + termosockor', note:''});
+  if(eff>=22) {
+    rows+=krow('ph-t-shirt','upper','jersey_short');
+    rows+=krow('ph-pants','lower','bib_shorts');
+  } else if(eff>=17) {
+    rows+=krow('ph-t-shirt','upper','jersey_arm');
+    rows+=krow('ph-pants','lower','bib_shorts');
+    rows+=krow('ph-hand','hands','gloves_light');
+  } else if(eff>=12) {
+    rows+=krow('ph-t-shirt','upper','jersey_long');
+    rows+=krow('ph-pants','lower','bib_shorts_k');
+    rows+=krow('ph-hand','hands','gloves_thin');
+    rows+=krow('ph-ear','head','ear_warmer');
+  } else if(eff>=7) {
+    rows+=krow('ph-t-shirt','upper','jersey_thermo');
+    rows+=krow('ph-pants','lower','bibtights');
+    rows+=krow('ph-hand','hands','gloves_winter');
+    rows+=krow('ph-ear','head','ear_band');
+  } else if(eff>=2) {
+    rows+=krow('ph-coat-hanger','upper','jacket_winter');
+    rows+=krow('ph-pants','lower','bibtights_w');
+    rows+=krow('ph-hand','hands','gloves_heavy');
+    rows+=krow('ph-beanie','head','hat');
+    rows+=krow('ph-sneaker','feet','shoe_cover');
   } else {
-    items.push({ph:'ph-coat-hanger', cat:'Överkropp', name:'Dubbellagring + vindtät jacka',  note:''});
-    items.push({ph:'ph-pants',       cat:'Underkropp',name:'Vinter-bibtights + underställ',  note:''});
-    items.push({ph:'ph-hand',        cat:'Händer',    name:'Extremhandskar / lobstervantar', note:''});
-    items.push({ph:'ph-beanie',      cat:'Huvud',     name:'Balaclava + mössa',              note:''});
-    items.push({ph:'ph-sneaker',     cat:'Fötter',    name:'Vintersko + skoöverdrag',        note:''});
-    alerts.push({type:'danger', msg:'Extremt kallt — risk för köldskador. Korta turen om möjligt.'});
+    rows+=krow('ph-coat-hanger','upper','jacket_double');
+    rows+=krow('ph-pants','lower','bibtights_dbl');
+    rows+=krow('ph-hand','hands','gloves_extreme');
+    rows+=krow('ph-beanie','head','balaclava');
+    rows+=krow('ph-sneaker','feet','shoe_winter');
+    callouts+=`<div class="callout danger">${MANICULA_D}<p>${talert('extreme')}</p></div>`;
   }
 
-  if (isRain) {
-    items.push({ph:'ph-cloud-rain',  cat:'Regnskydd', name:'Vattenavvisande jacka',   note:'Syntet — inte bomull'});
-    items.push({ph:'ph-eyeglasses',  cat:'Ögon',      name:'Glasögon / visir',        note:'Skyddar mot stänk'});
-    if (heavyRain) {
-      items.push({ph:'ph-sneaker',   cat:'Fötter',    name:'Vattentäta skoöverdrag', note:''});
-      alerts.push({type:'warn', msg:'Kraftigt regn — allt i syntet. Bomull torkar aldrig.'});
+  if(isRain) {
+    rows+=krow('ph-cloud-rain','rainprot','rain_jacket');
+    rows+=krow('ph-eyeglasses','eyes','glasses');
+    if(heavyRain) {
+      rows+=krow('ph-sneaker','feet','waterproof');
+      callouts+=`<div class="callout">${MANICULA}<p>${talert('heavyRain')}</p></div>`;
     } else {
-      alerts.push({type:'warn', msg:'Regnrisk — undvik bomull, välj syntetfibrer.'});
+      callouts+=`<div class="callout">${MANICULA}<p>${talert('rain')}</p></div>`;
     }
   }
 
-  if (dur>3)
-    items.push({ph:'ph-backpack',    cat:'Packa med', name:'Vindväst i bakfickan', note:'Du kyls ned mot slutet av långtur'});
+  if(dur>3) {
+    rows+=krow('ph-backpack','pack','vest');
+    callouts+=`<div class="callout">${MANICULA}<p>${talert('longRide')}</p></div>`;
+  } else if(dur>1.5) {
+    callouts+=`<div class="callout">${MANICULA}<p>${talert('startCold')}</p></div>`;
+  }
 
-  if (w.gusts>50)
-    alerts.push({type:'warn', msg:`Kraftiga byar (${Math.round(w.gusts)} km/h) — var försiktig på exponerade sträckor.`});
+  if(w.gusts>50) callouts+=`<div class="callout">${MANICULA}<p>${talert('gusts',Math.round(w.gusts))}</p></div>`;
 
-  let html='';
-  alerts.forEach(a => {
-    const isDanger = a.type==='danger';
-    html += `<div class="callout ${isDanger?'danger':''}">${isDanger?MANICULA_DANGER:MANICULA}<p>${a.msg}</p></div>`;
-  });
-  items.forEach(item => {
-    html += `<div class="kit-row">
-      <i class="ph ${item.ph} kit-ph"></i>
-      <div>
-        <div class="kit-cat">${item.cat}</div>
-        <div class="kit-name">${item.name}</div>
-        ${item.note?`<div class="kit-note">${item.note}</div>`:''}
-      </div>
-    </div>`;
-  });
-  document.getElementById('kitArea').innerHTML = html;
+  document.getElementById('kitArea').innerHTML=callouts+rows;
 }
 
-document.getElementById('durSlider').addEventListener('input', function() {
-  document.getElementById('durLabel').textContent = parseFloat(this.value).toFixed(1)+' h';
-  if (currentWeather) renderAnalysis();
+// ─── RENDER ALL ───────────────────────────────────────────
+function renderAll() { if(!S.wx) return; renderWeather(S.wx); renderAnalysis(); }
+
+// ─── UPDATE UI LABELS ─────────────────────────────────────
+function updateLabels() {
+  document.documentElement.lang=S.lang;
+  document.title=t('title');
+  document.getElementById('lblWeather').textContent  =t('weather');
+  document.getElementById('lblForecast').textContent =t('forecast');
+  document.getElementById('lblConfig').textContent   =t('config');
+  document.getElementById('lblDur').textContent      =t('duration');
+  document.getElementById('lblSpeed').textContent    =t('speed');
+  document.getElementById('lblIntensity').textContent=t('intensity');
+  document.getElementById('lblAnalysis').textContent =t('analysis');
+  document.getElementById('lblKit').textContent      =t('kit');
+  document.getElementById('intEasy').textContent     =t('easy');
+  document.getElementById('intMod').textContent      =t('mod');
+  document.getElementById('intHard').textContent     =t('hard');
+  document.getElementById('mapHintText').textContent =t('mapHint');
+  document.getElementById('speedLabel').textContent  =fmtWind(speedKmh());
+
+  // Placeholder if no location
+  if(!S.wx) {
+    document.getElementById('wxEmpty').textContent       = t('selectLocWx');
+    document.getElementById('analysisEmpty').textContent = t('selectLoc');
+    document.getElementById('kitEmpty').textContent      = t('selectLoc');
+    document.getElementById('locName').textContent       = t('waiting');
+    document.getElementById('mobLocName').textContent    = t('waiting');
+  } else {
+    setLocName(S.locName);
+    renderAll();
+  }
+  // Sync status label
+  const sc=document.getElementById('statusChip');
+  const state=['loading','ready','error'].find(s=>sc.classList.contains(s))||'waiting';
+  setStatus(state);
+  updateFcLabel();
+}
+
+function updateFcLabel() {
+  const lbl=document.getElementById('fcLabel');
+  if(S.fcOffset===0) { lbl.className='fc-now'; lbl.textContent=t('now'); }
+  else { lbl.className='fc-future'; lbl.textContent=t('inHours')(S.fcOffset); }
+}
+
+// ─── TOGGLE BINDINGS ─────────────────────────────────────
+function bindToggle(id, key, cb) {
+  document.getElementById(id).querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      document.getElementById(id).querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      S[key]=this.dataset.v;
+      cb();
+    });
+  });
+}
+bindToggle('langTog','lang', updateLabels);
+bindToggle('tempTog','tempUnit', ()=>{ if(S.wx) renderAll(); });
+bindToggle('windTog','windUnit', ()=>{
+  document.getElementById('speedLabel').textContent=fmtWind(speedKmh());
+  if(S.wx) renderAll();
 });
 
-document.getElementById('speedSlider').addEventListener('input', function() {
-  document.getElementById('speedLabel').textContent = this.value+' km/h';
-  if (currentWeather) renderAnalysis();
+// ─── SLIDER BINDINGS ─────────────────────────────────────
+document.getElementById('durSlider').addEventListener('input', function(){
+  document.getElementById('durLabel').textContent=parseFloat(this.value).toFixed(1)+' h';
+  if(S.wx) renderAnalysis();
 });
-
-document.querySelectorAll('.int-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
+document.getElementById('speedSlider').addEventListener('input', function(){
+  document.getElementById('speedLabel').textContent=fmtWind(parseInt(this.value));
+  if(S.wx) renderAnalysis();
+});
+document.getElementById('fcSlider').addEventListener('input', function(){
+  S.fcOffset=parseInt(this.value);
+  S.wx=wxAtOffset(S.fcOffset);
+  updateFcLabel();
+  renderAll();
+});
+document.querySelectorAll('.int-btn').forEach(btn=>{
+  btn.addEventListener('click', function(){
     document.querySelectorAll('.int-btn').forEach(b=>b.classList.remove('active'));
     this.classList.add('active');
-    intensity = this.dataset.int;
-    if (currentWeather) renderAnalysis();
+    S.intensity=this.dataset.int;
+    if(S.wx) renderAnalysis();
   });
 });
 
-// Init — Köpenhamn
-(async () => {
-  const lat=55.6761, lng=12.5683;
-  placeMarker(lat, lng);
-  document.getElementById('locCoords').textContent = `${lat}° N  ${lng}° E`;
-  document.getElementById('mapHint').style.display = 'none';
-  setStatus('loading','Hämtar…','ph-circle-notch');
-  document.getElementById('weatherArea').innerHTML =
-    '<div class="loading-row"><span class="spinner"></span>Köpenhamn…</div>';
-  try {
-    const [w, name] = await Promise.all([fetchWeather(lat,lng), reverseGeocode(lat,lng)]);
-    currentWeather = w;
-    document.getElementById('locName').textContent = name;
-    renderWeather(w);
-    renderAnalysis();
-    setStatus('ready','Klar','ph-check-circle');
-  } catch {
-    document.getElementById('weatherArea').innerHTML =
-      `<div class="callout danger">${MANICULA_DANGER}<p>Kunde inte hämta väderdata.</p></div>`;
-    setStatus('error','Fel','ph-warning');
-  }
-})();
+// ─── INIT ─────────────────────────────────────────────────
+updateLabels();
+setStatus('waiting');
+selectLocation(55.6761, 12.5683);
 </script>
 </body>
 </html>
