@@ -32,6 +32,7 @@ Det kräver GitHub-konto av den som tipsar. Det duger för test, inte för lanse
 
 ## Till dig som ska formge
 
+- **Nuvarande utseende är tillfälligt** – gräddvitt, mörkgrönt, tennisbollsgult. Riv det gärna.
 - **Färg och typsnitt:** variablerna i `:root` överst i `css/style.css`. Mörkt läge direkt under.
 - **Sixten:** är en platshållare. Sök på `SIXTEN` i `index.html` och byt SVG:n. Behåll klasserna `.tail` och `.ear` om svansen ska vifta och öronen hänga. Humöret (`yes` / `no` / `unknown` / `idle`) sätts som `data-mood` på `<body>`.
 - **Sixtens repliker:** `bark` i `T` överst i `js/app.js`.

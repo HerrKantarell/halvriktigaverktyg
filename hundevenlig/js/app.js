@@ -93,7 +93,7 @@ const dark = matchMedia('(prefers-color-scheme: dark)');
 let tiles;
 function setTiles() {
   tiles?.remove();
-  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
+  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'rastertiles/voyager'}/{z}/{x}/{y}{r}.png`, {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd', maxZoom: 20,
   }).addTo(map);
@@ -124,7 +124,7 @@ function rebuild() {
     const v = verdict(p);
     const c = cat(v.s);
     const m = c === 'unknown'
-      ? L.circleMarker([p.lat, p.lon], { renderer: canvas, radius: r, weight: 1, color: '#888884', fillColor: dark.matches ? '#1F1F1F' : '#fff', fillOpacity: 0.9 })
+      ? L.circleMarker([p.lat, p.lon], { renderer: canvas, radius: r, weight: 1, color: dark.matches ? '#9DB0A5' : '#5F7268', fillColor: dark.matches ? '#183227' : '#fff', fillOpacity: 0.9 })
       : L.marker([p.lat, p.lon], { icon: pin(v), title: p.n, alt: `${p.n} – ${t.verdict[v.s]}`, zIndexOffset: c === 'yes' ? 500 : 0 });
     m.bindPopup(() => popup(p), { maxWidth: 280 });
     m.on('mouseover', () => setMood(c)).on('mouseout', () => setMood(map._popup ? null : 'idle'));
