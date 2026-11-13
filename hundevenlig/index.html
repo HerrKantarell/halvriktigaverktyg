@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Må hunden med? · København</title>
+<meta name="description" content="Kort over restauranter og caféer i København – dem hvor hunden må komme med, og dem hvor den ikke må.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23DFF24A'/><g fill='%2317352A'><ellipse cx='12' cy='15.5' rx='4.2' ry='3.4'/><circle cx='7' cy='10.5' r='1.7'/><circle cx='10.3' cy='7.5' r='1.8'/><circle cx='13.7' cy='7.5' r='1.8'/><circle cx='17' cy='10.5' r='1.7'/></g></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mood="idle">
+
+<!--
+  Tvåspråkigt utan ramverk: all statisk text finns i båda språken med lang-attribut.
+  CSS gömmer det språk som inte matchar <html lang>. Se css/style.css → "Språk".
+-->
+
+<header class="top">
+  <div class="brand">
+    <h1>
+      <span lang="da">Må hunden med?</span>
+      <span lang="en">Can the dog come?</span>
+    </h1>
+    <p class="sub">
+      <span lang="da">Københavns spisesteder, sorteret efter snude.</span>
+      <span lang="en">Copenhagen's places to eat, sorted by snout.</span>
+    </p>
+  </div>
+  <div class="top-actions">
+    <button class="btn" id="open-tip" type="button">
+      <i class="ph ph-plus" aria-hidden="true"></i>
+      <span lang="da">Giv et tip</span><span lang="en">Add a tip</span>
+    </button>
+    <button class="btn-ghost lang" id="lang" type="button" aria-label="Sprog / Language">
+      <span lang="da">EN</span><span lang="en">DA</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="map-wrap" aria-label="Kort">
+    <div id="map"></div>
+    <button class="sniff" id="sniff" type="button">
+      <i class="ph ph-compass" aria-hidden="true"></i>
+      <span lang="da">Snus nærmeste op</span><span lang="en">Sniff out the nearest</span>
+    </button>
+    <p class="pin-hint" id="pin-hint" hidden>
+      <span lang="da">Klik på kortet, hvor stedet ligger.</span>
+      <span lang="en">Click the map where the place is.</span>
+      <button type="button" class="link" id="pin-cancel"><span lang="da">Fortryd</span><span lang="en">Cancel</span></button>
+    </p>
+  </section>
+
+  <aside class="panel">
+    <!-- SIXTEN · platshållare. Byt innehållet i .sixten mot riktig illustration.
+         Behåll klasserna .tail och .ear om svansen ska fortsätta vifta. -->
+    <div class="mascot">
+      <button class="sixten-btn" id="sixten" type="button" popovertarget="about" aria-label="Sixten">
+        <svg class="sixten" viewBox="0 0 120 90" aria-hidden="true">
+          <path class="tail" d="M24 46 C14 42 9 34 10 24"/>
+          <path d="M30 60v20M42 62v18M62 62v18M74 60v20"/>
+          <rect x="20" y="38" width="60" height="26" rx="13"/>
+          <circle cx="88" cy="32" r="14"/>
+          <rect x="96" y="29" width="17" height="11" rx="5.5"/>
+          <circle class="ink" cx="112" cy="32" r="2.4"/>
+          <circle class="ink" cx="91" cy="28" r="1.6"/>
+          <path class="ear" d="M81 21c-7 6-5 16-3 21 7-2 9-9 9-17z"/>
+        </svg>
+      </button>
+      <output class="bark" id="bark" for="sixten" aria-live="polite"></output>
+    </div>
+
+    <div id="about" popover class="about">
+      <h2><span lang="da">Om kortet</span><span lang="en">About the map</span></h2>
+      <p lang="da">Stederne kommer fra OpenStreetMap. Hundereglerne kommer fra OSM-tagget <code>dog</code> og fra tips. Regler ændrer sig – ring, hvis det er vigtigt.</p>
+      <p lang="en">Places come from OpenStreetMap. Dog rules come from the OSM <code>dog</code> tag and from tips. Rules change – call ahead if it matters.</p>
+      <p class="meta" id="data-meta"></p>
+    </div>
+
+    <div class="search">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input class="input" id="q" type="search" list="names" autocomplete="off"
+             data-ph-da="Søg et sted" data-ph-en="Search a place">
+      <datalist id="names"></datalist>
+    </div>
+
+    <fieldset class="filters">
+      <legend class="sr"><span lang="da">Vis</span><span lang="en">Show</span></legend>
+      <label class="chip" data-s="yes">
+        <input type="checkbox" id="f-yes" checked>
+        <span class="dot"></span>
+        <span lang="da">Sjove</span><span lang="en">Fun</span>
+        <output id="n-yes">–</output>
+      </label>
+      <label class="chip" data-s="no">
+        <input type="checkbox" id="f-no" checked>
+        <span class="dot"></span>
+        <span lang="da">Kedelige</span><span lang="en">Boring</span>
+        <output id="n-no">–</output>
+      </label>
+      <label class="chip" data-s="unknown">
+        <input type="checkbox" id="f-unknown" checked>
+        <span class="dot"></span>
+        <span lang="da">Uvist</span><span lang="en">Unknown</span>
+        <output id="n-unknown">–</output>
+      </label>
+    </fieldset>
+
+    <div class="sniffed">
+      <meter id="meter" min="0" max="1" value="0"></meter>
+      <p class="meta" id="meter-text"></p>
+    </div>
+
+    <div class="list-wrap" id="list-wrap">
+      <div class="leash" aria-hidden="true"><i class="ph ph-paw-print"></i></div>
+      <ul class="list" id="list"></ul>
+      <p class="empty" id="empty" hidden>
+        <span lang="da">Ingen steder her. Zoom ud, eller slå et filter til.</span>
+        <span lang="en">Nothing here. Zoom out, or switch a filter on.</span>
+      </p>
+      <p class="status" id="status" role="status">
+        <span lang="da">Henter steder…</span><span lang="en">Fetching places…</span>
+      </p>
+    </div>
+
+    <div class="callout">
+      <i class="ph ph-paw-print" aria-hidden="true"></i>
+      <p>
+        <span lang="da">Ved du noget, kortet ikke ved? Vælg et sted og giv et tip.</span>
+        <span lang="en">Know something the map doesn't? Pick a place and add a tip.</span>
+      </p>
+    </div>
+
+    <footer class="foot meta">
+      <span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · CARTO</span>
+      <a href="../">HerrKantarell</a>
+    </footer>
+  </aside>
+</main>
+
+<dialog id="tip" class="tip">
+  <form method="dialog" id="tip-form">
+    <h2><span lang="da">Giv et tip</span><span lang="en">Add a tip</span></h2>
+
+    <label class="field">
+      <span class="label"><span lang="da">Sted</span><span lang="en">Place</span></span>
+      <input class="input" id="tip-name" name="name" list="names" required maxlength="80" autocomplete="off">
+    </label>
+
+    <fieldset class="field verdict">
+      <legend class="label"><span lang="da">Må hunden komme med?</span><span lang="en">Can the dog come?</span></legend>
+      <label><input type="radio" name="s" value="yes" required>
+        <span><span lang="da">Ja</span><span lang="en">Yes</span></span></label>
+      <label><input type="radio" name="s" value="outside">
+        <span><span lang="da">Kun ude</span><span lang="en">Outside only</span></span></label>
+      <label><input type="radio" name="s" value="no">
+        <span><span lang="da">Nej</span><span lang="en">No</span></span></label>
+    </fieldset>
+
+    <label class="field">
+      <span class="label"><span lang="da">Hvordan ved du det? (valgfrit)</span><span lang="en">How do you know? (optional)</span></span>
+      <textarea class="input" name="note" rows="2" maxlength="200"
+                data-ph-da="Fx: spurgte i baren i november" data-ph-en="E.g. asked at the bar in November"></textarea>
+    </label>
+
+    <div class="dialog-actions">
+      <button class="btn-ghost" type="button" id="tip-close"><span lang="da">Luk</span><span lang="en">Close</span></button>
+      <button class="btn" type="submit" value="save"><span lang="da">Gem</span><span lang="en">Save</span></button>
+    </div>
+  </form>
+
+  <div class="sent" id="tip-sent" hidden>
+    <h2><span lang="da">Gemt.</span><span lang="en">Saved.</span></h2>
+    <p lang="da">Tippet ligger nu på dit kort. Send det videre, så kommer det på alles.</p>
+    <p lang="en">The tip is on your map now. Pass it on and it lands on everyone's.</p>
+    <div class="dialog-actions">
+      <button class="btn-ghost" type="button" id="sent-close"><span lang="da">Færdig</span><span lang="en">Done</span></button>
+      <a class="btn" id="tip-send" target="_blank" rel="noopener">
+        <span lang="da">Send til flokken</span><span lang="en">Send to the pack</span>
+        <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+      </a>
+    </div>
+  </div>
+</dialog>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
