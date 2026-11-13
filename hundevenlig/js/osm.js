@@ -5,7 +5,9 @@ export const BBOX = [55.6, 12.45, 55.74, 12.67]; // syd, väst, nord, öst
 
 export const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ];
 
 export const QUERY = `[out:json][timeout:90];
@@ -39,23 +41,31 @@ export function slim(el) {
   return out;
 }
 
-export async function fetchPlaces(fetchImpl = fetch) {
-  let lastErr;
-  for (const url of ENDPOINTS) {
-    try {
-      const res = await fetchImpl(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(QUERY),
-      });
-      if (!res.ok) throw new Error(url + ' → HTTP ' + res.status);
-      const json = await res.json();
-      const places = json.elements.map(slim).filter(Boolean);
-      if (!places.length) throw new Error(url + ' → tomt svar');
-      return places;
-    } catch (e) {
-      lastErr = e;
+/**
+ * Provar speglarna i tur och ordning. De publika servrarna stryper ofta delade
+ * IP-adresser (t.ex. GitHub Actions), så skriptet kör flera varv med paus emellan.
+ */
+export async function fetchPlaces({ rounds = 1, pauseMs = 0, headers = {}, log = () => {} } = {}) {
+  const errors = [];
+  for (let round = 0; round < rounds; round++) {
+    if (round) await new Promise((r) => setTimeout(r, pauseMs * round));
+    for (const url of ENDPOINTS) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers },
+          body: 'data=' + encodeURIComponent(QUERY),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        const places = (json.elements || []).map(slim).filter(Boolean);
+        if (!places.length) throw new Error('tomt svar');
+        return places;
+      } catch (e) {
+        errors.push(`${url} → ${e.message}`);
+        log(errors.at(-1));
+      }
     }
   }
-  throw lastErr;
+  throw new Error('Ingen Overpass-server svarade:\n' + errors.join('\n'));
 }

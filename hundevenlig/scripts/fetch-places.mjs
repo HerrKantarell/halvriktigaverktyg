@@ -5,7 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { fetchPlaces } from '../js/osm.js';
 
 const target = fileURLToPath(new URL('../data/places.json', import.meta.url));
-const places = (await fetchPlaces()).sort((a, b) => a.id.localeCompare(b.id));
+const places = (await fetchPlaces({
+  rounds: 5,
+  pauseMs: 30_000,
+  headers: { 'User-Agent': 'hundevenlig/1.0 (github.com/HerrKantarell/halvriktigaverktyg)' },
+  log: console.warn,
+})).sort((a, b) => a.id.localeCompare(b.id));
 
 if (places.length < 500) {
   throw new Error(`Bara ${places.length} ställen – misstänkt lite, skriver inte över.`);
