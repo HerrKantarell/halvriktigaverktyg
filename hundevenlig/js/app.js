@@ -7,6 +7,9 @@ const CONFIG = {
   zoom: 14,
   listMax: 80,
   cacheDays: 7,
+  // CARTO kräver nyckel sedan september 2026 (gratis: carto.com/basemaps/apikey).
+  // Tom = OpenStreetMaps egna kartbilder, som inte kräver nyckel.
+  cartoKey: '',
 };
 
 /* ── Text ──────────────────────────────────────────────── */
@@ -93,10 +96,13 @@ const dark = matchMedia('(prefers-color-scheme: dark)');
 let tiles;
 function setTiles() {
   tiles?.remove();
-  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'rastertiles/voyager'}/{z}/{x}/{y}{r}.png`, {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 20,
-  }).addTo(map);
+  const osm = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+  tiles = CONFIG.cartoKey
+    ? L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'rastertiles/voyager'}/{z}/{x}/{y}{r}.png?key=${CONFIG.cartoKey}`, {
+        attribution: osm + ' © <a href="https://carto.com/attributions">CARTO</a>', subdomains: 'abcd', maxZoom: 20,
+      })
+    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: osm, maxZoom: 19, className: 'osm-tiles' });
+  tiles.addTo(map);
 }
 setTiles();
 dark.addEventListener('change', () => { setTiles(); if (loaded) rebuild(); });
