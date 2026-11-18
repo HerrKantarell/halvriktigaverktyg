@@ -220,6 +220,11 @@ meter::-moz-meter-bar { background: var(--ink); border-radius: 3px; }
 
 /* ── Karta ─────────────────────────────────────────────── */
 .leaflet-container { font: inherit; }
+/* OSM:s kartbilder: dämpade så att nålarna syns, inverterade i mörkt läge */
+.osm-tiles { filter: saturate(.35) contrast(.92) brightness(1.04); }
+@media (prefers-color-scheme: dark) {
+  .osm-tiles { filter: invert(1) hue-rotate(180deg) saturate(.4) brightness(.85) contrast(.9); }
+}
 .pin { display: grid; place-items: center; border-radius: 50%; box-shadow: 0 0 0 1.5px #17352A, 2px 3px 0 rgba(23, 53, 42, .35); }
 .pin svg { width: 68%; height: 68%; fill: #fff; }
 .pin.yes { background: var(--accent); }
